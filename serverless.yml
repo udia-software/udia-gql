@@ -1,0 +1,72 @@
+service: udia-gql
+app: udia
+tenant: awwong1
+
+# Add the serverless-webpack plugin
+plugins:
+  - serverless-webpack
+  - serverless-offline
+
+custom:
+  tableName: 'users-${self:service}-${opt:stage, self:provider.stage}'
+  serverless-offline:
+    host: 0.0.0.0
+  dynamoDbEndpoint:
+    prod: ''
+    dev: 'http://localhost:8000'
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  stage: ${opt:stage}
+  region: ${opt:region, 'ca-central-1'}
+  logRetentionInDays: 14
+  environment:
+    USERS_TABLE: ${self:custom.tableName}
+    DYNAMODB_ENDPOINT: ${self:custom.dynamoDbEndpoint.${opt:stage}}
+    AWS_DEFAULT_REGION: ${opt:region, 'ca-central-1'}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}"
+
+resources:
+  Resources:
+    UsersDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: uuid
+            AttributeType: S
+          - AttributeName: username
+            AttributeType: S
+        KeySchema:
+          - AttributeName: uuid
+            KeyType: HASH
+          - AttributeName: username
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:custom.tableName}
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - http:
+          method: get
+          path: hello
+  graphql:
+    handler: handler.graphql
+    events:
+      - http:
+          method: ANY
+          path: graphql

@@ -1,0 +1,18 @@
+version: '3'
+services:
+  db:
+    image: amazon/dynamodb-local
+    ports:
+      - 8000:8000
+  web:
+    build: .
+    depends_on:
+      - db
+    links:
+      - db:db
+    environment:
+      NODE_ENV: development
+      AWS_REGION: ca-central
+      AWS_ENDPOINT: http://localhost:8000
+    ports:
+      - 3000:3000
