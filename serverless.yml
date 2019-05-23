@@ -24,7 +24,6 @@ provider:
   environment:
     USERS_TABLE: ${self:custom.tableName}
     DYNAMODB_ENDPOINT: ${self:custom.dynamoDbEndpoint.${opt:stage}}
-    AWS_DEFAULT_REGION: ${opt:region, 'ca-central-1'}
   iamRoleStatements:
     - Effect: Allow
       Action:
