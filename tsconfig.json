@@ -1,15 +1,18 @@
 {
   "compilerOptions": {
     "lib": [
-      "es2017"
+      "es2017",
+      "es2015.promise",
+      "esnext.asynciterable"
     ],
     "strict": true,
     "moduleResolution": "node",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "sourceMap": true,
-    "target": "es2017",
-    "outDir": "lib"
+    "target": "es5",
+    "preserveConstEnums": true,
+    "strictNullChecks": true
   },
   "exclude": [
     "node_modules"

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Helper script to create local tables for development
+# serverless-dynamodb-local didn't work, so this with docker is the workaround
 
 aws dynamodb create-table \
   --endpoint-url http://localhost:8000 \

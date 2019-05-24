@@ -10,7 +10,7 @@ export default class Auth {
   private static ARGON_OPTS = {
     hashLength: 32,
     saltLength: 16,
-    timeCost: 8,
+    timeCost: 7,
     memoryCost: 32768,
     parallelism: 2,
     type: argon2id
