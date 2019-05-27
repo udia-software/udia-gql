@@ -7,22 +7,6 @@ export interface IJwtPayload {
 }
 
 export default class Auth {
-  private static ARGON_OPTS = {
-    hashLength: 32,
-    saltLength: 16,
-    timeCost: 7,
-    memoryCost: 32768,
-    parallelism: 2,
-    type: argon2id
-  }
-
-  private static JWT_OPTS = {
-    algorithm: "HS256",
-    expiresIn: "30d"
-  }
-  private static JWT_VERIFY_OPTS = {
-    algorithms: ["HS256",]
-  }
 
   /**
    * Given a string client password, hash the password.
@@ -69,4 +53,20 @@ export default class Auth {
       return {};
     }
   }
+  private static ARGON_OPTS = {
+    hashLength: 32,
+    saltLength: 16,
+    timeCost: 7,
+    memoryCost: 32768,
+    parallelism: 2,
+    type: argon2id
+  };
+
+  private static JWT_OPTS = {
+    algorithm: "HS256",
+    expiresIn: "30d"
+  };
+  private static JWT_VERIFY_OPTS = {
+    algorithms: ["HS256", ]
+  };
 }

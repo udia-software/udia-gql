@@ -1,4 +1,6 @@
 # udia-gql
+[![CircleCI](https://circleci.com/gh/udia-software/udia-gql.svg?style=svg)](https://circleci.com/gh/udia-software/udia-gql)
+
 GraphQL Backend for Udia serverless application.
 
 ```bash

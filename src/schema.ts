@@ -12,7 +12,7 @@ export interface IUser {
   uuid: string;
   username: string;
   pwFunc: string;
-  pwFuncOptions: IpwFuncOptions;
+  pwFuncOptions: IPwFuncOptions;
   createdAt: number;
 }
 
@@ -21,14 +21,14 @@ input ICreateUser {
   username: String!
   pwh: String!
   pwFunc: String!
-  pwFuncOpts: IPwFuncOptions!
+  pwFuncOptions: IPwFuncOptions!
 }`;
 
 export interface ICreateUser {
   username: string;
   pwh: string;
   pwFunc: string;
-  pwFuncOpts: IpwFuncOptions;
+  pwFuncOptions: IPwFuncOptions;
 }
 
 /**
@@ -59,13 +59,13 @@ const TypeUserAuthPayload = `
 type UserAuthPayload {
   jwt: String!
   user: User!
-}`
+}`;
 export interface IUserAuthPayload {
   jwt: string;
   user: IUser;
 }
 
-export interface IpwFuncOptions {
+export interface IPwFuncOptions {
   salt: string;
   memory: number;
   iterations: number;
@@ -82,8 +82,19 @@ export const typeDefs = gql(`
   ${TypePwFuncOptions}
   ${TypeUserAuthPayload}
 
+  type UserAuthParams {
+    pwFunc: String!
+    pwFuncOptions: TPwFuncOptions!
+  }
+
   type Query {
     hello: String
+
+    # Get the user authentication parameters for a given username
+    getUserAuthParams(
+      # User provided username
+      username: String!
+    ): UserAuthParams!
   }
 
   type Mutation {

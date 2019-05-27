@@ -4,7 +4,6 @@ import { APIGatewayProxyHandler } from "aws-lambda";
 import { resolvers } from "./src/resolvers";
 import { typeDefs } from "./src/schema";
 
-
 export const hello: APIGatewayProxyHandler = (event, context, callback) => {
   callback(undefined, {
     statusCode: 200,
@@ -26,7 +25,7 @@ const server = new ApolloServer({
 });
 export const graphql: APIGatewayProxyHandler = server.createHandler({
   cors: {
-    origin: '*',
+    origin: "*",
     credentials: true,
   },
 });
