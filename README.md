@@ -1,5 +1,6 @@
 # udia-gql
 [![CircleCI](https://circleci.com/gh/udia-software/udia-gql.svg?style=svg)](https://circleci.com/gh/udia-software/udia-gql)
+[![codecov](https://codecov.io/gh/udia-software/udia-gql/branch/master/graph/badge.svg)](https://codecov.io/gh/udia-software/udia-gql)
 
 GraphQL Backend for Udia serverless application.
 
