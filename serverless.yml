@@ -76,6 +76,7 @@ functions:
           cors: true
 
 package:
+  excludeDevDependencies: true
   exclude:
     - .git/**
     - .gitignore
@@ -83,7 +84,6 @@ package:
     - npm-debug.log
     - .serverless/**
     - .serverless_plugins/**
-    - node_modules/**
     - coverage/**
     - .circleci/**
     - .vscode/**
