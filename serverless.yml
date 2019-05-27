@@ -74,21 +74,3 @@ functions:
           method: ANY
           path: graphql
           cors: true
-
-package:
-  excludeDevDependencies: true
-  exclude:
-    - .git/**
-    - .gitignore
-    - .DS_Store
-    - npm-debug.log
-    - .serverless/**
-    - .serverless_plugins/**
-    - coverage/**
-    - .circleci/**
-    - .vscode/**
-    - .dockerignore
-    - Dockerfile
-    - docker-compose.yml
-    - init_local_dynamodb.sh
-    - README.md

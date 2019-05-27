@@ -16,6 +16,7 @@
     "deploy": "serverless deploy"
   },
   "dependencies": {
+    "apollo-server-core": "^2.5.0",
     "apollo-server-lambda": "^2.5.0",
     "argon2": "^0.23.0",
     "aws-lambda": "^0.1.2",
@@ -31,7 +32,6 @@
     "@types/jsonwebtoken": "^8.3.2",
     "@types/node": "8.10.x",
     "@types/uuid": "^3.4.4",
-    "apollo-server-core": "^2.5.0",
     "jest": "^24.8.0",
     "serverless": "^1.43.0",
     "serverless-offline": "^4.10.6",
