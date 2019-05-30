@@ -4,11 +4,12 @@ import { ICreateUserInput } from "../../graphql/schema";
 describe("resolvers.ts", () => {
   describe("Query", () => {
     it("queries hello", () => {
+      expect.assertions(1);
       expect(resolvers.Query.hello()).toBe("Hello world!");
     });
     it("queries getUserAuthParams", async () => {
       expect.assertions(1);
-      return expect(resolvers.Query.getUserAuthParams(
+      await expect(resolvers.Query.getUserAuthParams(
         undefined, { username: "" })
       ).rejects.toThrowError("User does not exist");
     });
@@ -22,15 +23,11 @@ describe("resolvers.ts", () => {
         pwh: "",
         pwFunc: "",
         pwFuncOptions: {
-          salt: "",
-          memory: -1,
-          iterations: -1,
-          hashLength: -1,
-          parallelism: -1,
-          type: -1
+          nonce: "",
+          cost: -1
         }
       };
-      return expect(resolvers.Mutation.createUser(
+      await expect(resolvers.Mutation.createUser(
         undefined, { data }
       )).rejects.toThrowError("Failed to create User");
     });

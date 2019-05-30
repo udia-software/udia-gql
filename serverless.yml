@@ -24,7 +24,8 @@ provider:
   environment:
     USERS_TABLE: ${self:custom.usersTable}
     DYNAMODB_ENDPOINT: ${self:custom.dynamoDbEndpoint.${self:provider.stage}}
-    DYNAMODB_REGION: ${self:provider.stage}
+    DYNAMODB_REGION: ${self:provider.region}
+    DYNAMODB_STAGE: ${self:provider.stage}
   iamRoleStatements:
     - Effect: Allow
       Action:

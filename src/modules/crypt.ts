@@ -4,13 +4,18 @@
 import { pbkdf2 } from "pbkdf2";
 import { box, hash, randomBytes, secretbox, sign } from "tweetnacl";
 
+type Primative = string | number | boolean | null;
+// tslint:disable-next-line: interface-name
+interface SerializableArray extends ReadonlyArray<Serializable> { }
+export type Serializable = Primative | Primative[] | SerializableArray;
+
 export default class Crypt {
   /**
    * Generate the three required keys for UDIA auth & crypto
    * @param uname Username of user
    * @param uip User inputted password
    * @param nonce Random string created on user creation
-   * @param cost Number of PBKDF2 iterations
+   * @param cost Number of pbkdf2 iterations
    */
   public static async deriveMasterKeys(uname: string, uip: string, nonce: string, cost: number) {
     const luname = uname.normalize("NFKC").toLowerCase().trim();
@@ -39,7 +44,7 @@ export default class Crypt {
    * @param payload Serializable value to encrypt
    * @param sk User derived secret key
    */
-  public static symmetricEncrypt(payload: any, sk: string) {
+  public static symmetricEncrypt(payload: Serializable, sk: string) {
     const msgString = JSON.stringify(payload);
     const msg = Buffer.from(msgString, "utf8");
     const nonceBuffer = Buffer.from(randomBytes(secretbox.nonceLength));
@@ -56,7 +61,7 @@ export default class Crypt {
    * @param nonce Random crypographic one time value
    * @param sk User derived secret key
    */
-  public static symmetricDecrypt(enc: string, nonce: string, sk: string) {
+  public static symmetricDecrypt(enc: string, nonce: string, sk: string): Serializable {
     const encBuffer = Buffer.from(enc, "base64");
     const nonceBuffer = Buffer.from(nonce, "base64");
     const key = Buffer.from(sk, "base64");
@@ -98,7 +103,7 @@ export default class Crypt {
    * @param theirPublicEncKey Other user's public encryption key
    * @param mySecretEncKey My secret encryption key
    */
-  public static asymmetricEncrypt(payload: any, theirPublicEncKey: string, mySecretEncKey: string) {
+  public static asymmetricEncrypt(payload: Serializable, theirPublicEncKey: string, mySecretEncKey: string) {
     const msgString = JSON.stringify(payload);
     const msg = Buffer.from(msgString, "utf8");
     const nonceBuffer = randomBytes(box.nonceLength);
@@ -117,7 +122,8 @@ export default class Crypt {
    * @param theirPublicEncKey Other user's public encryption key
    * @param mySecretEncKey My secret encryption key
    */
-  public static asymmetricDecrypt(enc: string, nonce: string, theirPublicEncKey: string, mySecretEncKey: string) {
+  public static asymmetricDecrypt(
+    enc: string, nonce: string, theirPublicEncKey: string, mySecretEncKey: string): Serializable {
     const encBuffer = Buffer.from(enc, "base64");
     const nonceBuffer = Buffer.from(nonce, "base64");
     const theirPublicKey = Buffer.from(theirPublicEncKey, "base64");
@@ -148,7 +154,7 @@ export default class Crypt {
    * @param payload Serializable value to sign
    * @param secretSigningKey My secret signing key
    */
-  public static signMessage(payload: any, secretSigningKey: string) {
+  public static signMessage(payload: Serializable, secretSigningKey: string) {
     const msgString = JSON.stringify(payload);
     const msg = Buffer.from(msgString, "utf8");
     const secretKey = Buffer.from(secretSigningKey, "base64");
@@ -157,7 +163,7 @@ export default class Crypt {
     return signature;
   }
 
-  public static verifySignature(payload: any, signature: string, publicSignKey: string) {
+  public static verifySignature(payload: Serializable, signature: string, publicSignKey: string) {
     const msgString = JSON.stringify(payload);
     const msg = Buffer.from(msgString, "utf8");
     const sigBuffer = Buffer.from(signature, "base64");

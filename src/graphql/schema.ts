@@ -35,34 +35,25 @@ export interface ICreateUserInput {
 }
 
 /**
- * pwFunc options intended for Argon2di, but generalizeable (PBKDF2)
+ * pwFunc options intended for pbkdf2 in Crypt.deriveMasterKeys
  * http://antelle.net/argon2-browser/
  */
 const InputPwFuncOptions = `input PwFuncOptionsInput {
-  salt: String
-  memory: Int
-  iterations: Int
-  hashLength: Int
-  parallelism: Int
-  type: Int
+  nonce: String
+  cost: Int
 }`;
 const TypePwFuncOptions = `type PwFuncOptions {
-  salt: String
-  memory: Int
-  iterations: Int
-  hashLength: Int
-  parallelism: Int
-  type: Int
+  nonce: String
+  cost: Int
 }`;
 export interface IPwFuncOptions {
-  salt: string;
-  memory: number;
-  iterations: number;
-  hashLength: number;
-  parallelism: number;
-  type: number;
+  nonce: string;
+  cost: number;
 }
 
+/**
+ * Autentication success response payload
+ */
 const TypeUserAuthPayload = `type UserAuthPayload {
   jwt: String!
   user: User!
@@ -72,6 +63,9 @@ export interface IUserAuthPayload {
   user: IUser;
 }
 
+/**
+ * User authentication parameters
+ */
 const TypeUserAuthParams = `type UserAuthParams {
   pwFunc: String!
   pwFuncOptions: PwFuncOptions!
