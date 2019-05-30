@@ -9,7 +9,7 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Update npm to Laltest
+          name: Update npm to Latest
           command: sudo npm install -g npm@latest
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
@@ -27,6 +27,8 @@ jobs:
       - image: circleci/dynamodb:latest
     steps:
       - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
       - run:
           name: Initialize Test Database
           command: npm run load_dev_db
