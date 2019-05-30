@@ -21,6 +21,8 @@ provider:
   region: ${opt:region, 'us-west-2'}
   cfnRole: arn:aws:iam::593583987155:role/Serverless_CloudFormation
   logRetentionInDays: 14
+  apiKeys:
+    - ${self:provider.stage}-gqlEndpointKey
   environment:
     USERS_TABLE: ${self:custom.usersTable}
     DYNAMODB_ENDPOINT: ${self:custom.dynamoDbEndpoint.${self:provider.stage}}

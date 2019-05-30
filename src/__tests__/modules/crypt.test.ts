@@ -1,6 +1,6 @@
 import Crypt from "../../modules/crypt";
 
-describe("Crypt", () => {
+describe("modules/crypt.ts", () => {
   // password for server authentication
   const pw = "MeZZOxsAeSiAfR9cwLi36SrjS7gypsBL8yNnvbWi9kA=";
   // private key for symmetric & asymmetric encryption

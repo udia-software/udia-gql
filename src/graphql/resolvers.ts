@@ -1,4 +1,5 @@
 import UserManager from "../managers/userManager";
+import { GraphQLTypeLong } from "./scalars";
 import { ICreateUserInput } from "./schema";
 
 // Provide resolver functions for your schema fields
@@ -13,5 +14,7 @@ export const resolvers = {
     createUser: async (_: any, params: { data: ICreateUserInput }) => {
       return UserManager.createUser(params.data);
     }
-  }
+  },
+  // Put custom scalars here
+  Long: GraphQLTypeLong
 };

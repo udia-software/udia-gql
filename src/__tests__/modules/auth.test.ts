@@ -1,6 +1,6 @@
 import Auth from "../../modules/auth";
 
-describe("Auth", () => {
+describe("modules/auth.ts", () => {
   it("should hash and verify a password", async () => {
     expect.assertions(4);
     const pass = "Hunter2";

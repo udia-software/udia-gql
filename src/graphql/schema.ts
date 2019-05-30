@@ -8,7 +8,7 @@ const TypeUser = `type User {
   username: String!
   pwFunc: String!
   pwFuncOptions: PwFuncOptions!
-  createdAt: Int!
+  createdAt: Long!
 }`;
 export interface IUser {
   uuid: string;
@@ -75,14 +75,18 @@ export interface IUserAuthParams {
   pwFuncOptions: IPwFuncOptions;
 }
 
+/**
+ * Queries, Mutations, Scalars
+ */
 const Query = `type Query {
   hello: String
   getUserAuthParams(username: String!): UserAuthParams!
 }`;
-
 const Mutation = `type Mutation {
   createUser(data: CreateUserInput!): UserAuthPayload!
 }`;
+// Custom scalars should also be entered in the resolvers
+const Scalars = `scalar Long`;
 
 // Construct a schema, using GraphQL schema language
 const gqlTypes: ReadonlyArray<string> = [
@@ -93,7 +97,8 @@ const gqlTypes: ReadonlyArray<string> = [
   TypeUserAuthPayload,
   TypeUserAuthParams,
   Query,
-  Mutation
+  Mutation,
+  Scalars
 ];
 
 export const typeDefs = gql(gqlTypes.join("\n"));

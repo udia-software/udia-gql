@@ -3,7 +3,7 @@ import { USERS_TABLE, USERS_UUID_NS } from "../../constants";
 import UserManager from "../../managers/userManager";
 import { client } from "../../modules/dbClient";
 
-describe("userManager", () => {
+describe("managers/userManager.ts", () => {
   describe("createUser", () => {
     const username = new Date().getTime() + "CREATE";
     const lUsername = username.normalize("NFKC").toLowerCase().trim();
