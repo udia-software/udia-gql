@@ -61,6 +61,7 @@
     },
     "collectCoverage": true,
     "collectCoverageFrom": [
+      "handler.ts",
       "src/**/*.{ts,tsx}",
       "!**/node_modules/**",
       "!src/util/initDynamoDB.ts"
