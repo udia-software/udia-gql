@@ -21,8 +21,6 @@ provider:
   region: ${opt:region, 'us-west-2'}
   cfnRole: arn:aws:iam::593583987155:role/Serverless_CloudFormation
   logRetentionInDays: 14
-  apiKeys:
-    - ${self:provider.stage}-gqlEndpointKey
   environment:
     USERS_TABLE: ${self:custom.usersTable}
     DYNAMODB_ENDPOINT: ${self:custom.dynamoDbEndpoint.${self:provider.stage}}
@@ -37,7 +35,11 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.usersTable}"
+      Resource:
+        - "Fn::Join":
+          - ":"
+          - 
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.usersTable}"
 
 resources:
   Resources:
@@ -58,14 +60,14 @@ resources:
 
 functions:
   hello:
-    handler: handler.hello
+    handler: src/handlerHello.hello
     memorySize: 128
     events:
       - http:
           method: get
           path: hello
   graphql:
-    handler: handler.graphql
+    handler: src/handlerGraphQL.graphql
     memorySize: 192
     timeout: 9
     events:

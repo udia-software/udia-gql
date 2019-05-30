@@ -2,7 +2,7 @@
   "name": "udia-gql",
   "version": "0.0.0",
   "description": "Serverless GraphQL endpoint for Udia",
-  "main": "handler.ts",
+  "main": "src/handler.ts",
   "author": {
     "name": "Alexander Wong",
     "email": "alex@udia.ca",

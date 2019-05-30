@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Callback, Context } from "aws-lambda";
-import { graphql, hello } from "../../handler";
+import { graphql, hello } from "../handler";
 
 describe("handler.ts", () => {
 

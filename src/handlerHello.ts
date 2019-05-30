@@ -1,5 +1,4 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
-import { server } from "./src/graphql/server";
 
 export const hello: APIGatewayProxyHandler = (event, context, callback) => {
   callback(undefined, {
@@ -10,10 +9,3 @@ export const hello: APIGatewayProxyHandler = (event, context, callback) => {
     })
   });
 };
-
-export const graphql: APIGatewayProxyHandler = server.createHandler({
-  cors: {
-    origin: "*",
-    credentials: true,
-  },
-});
