@@ -6,30 +6,35 @@ jobs:
     working_directory: ~/udia-gql
     docker:
       - image: circleci/node:8.16.0
+      - image: circleci/dynamodb:latest
     steps:
       - checkout
       - run:
-          name: update-npm
+          name: Update npm to Laltest
           command: sudo npm install -g npm@latest
       - restore_cache:
           key: dependency-cache-{{ checksum "package.json" }}
       - run:
-          name: install-npm-wee
+          name: Install Project Dependencies
           command: npm install
       - save_cache:
           key: dependency-cache-{{ checksum "package.json" }}
           paths:
             - ./node_modules
       - run:
-          name: test
+          name: Initialize Test Database
+          command: npm run load_dev_db
+      - run:
+          name: Test
           command: npm test
-      - store_artifacts:
-          path: coverage
-          prefix: coverage
       - store_artifacts:
           path: test-results.xml
           prefix: tests
       - store_test_results:
           path: test-results.xml
-      - codecov/upload:
-          file: 
+      - codecov/upload
+general:
+  branches:
+    only:
+      - master
+      - /feature\/.*/

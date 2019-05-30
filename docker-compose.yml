@@ -10,9 +10,5 @@ services:
       - db
     links:
       - db:db
-    environment:
-      NODE_ENV: development
-      AWS_REGION: ca-central
-      AWS_ENDPOINT: http://localhost:8000
     ports:
       - 3000:3000

@@ -1,5 +1,5 @@
-import { ICreateUser } from "./schema";
-import UserManager from "./userManager";
+import UserManager from "../managers/userManager";
+import { ICreateUserInput } from "./schema";
 
 // Provide resolver functions for your schema fields
 export const resolvers = {
@@ -10,7 +10,7 @@ export const resolvers = {
     }
   },
   Mutation: {
-    createUser: async (_: any, params: { data: ICreateUser }) => {
+    createUser: async (_: any, params: { data: ICreateUserInput }) => {
       return UserManager.createUser(params.data);
     }
   }

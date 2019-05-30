@@ -1,18 +1,27 @@
 import { UserInputError } from "apollo-server-core";
 import { DynamoDB } from "aws-sdk";
 import * as uuidv5 from "uuid/v5";
-import Auth from "./auth";
-import { DYNAMODB_ENDPOINT, USERS_TABLE } from "./constants";
-import { ICreateUser, IUserAuthPayload } from "./schema";
+import { DYNAMODB_ENDPOINT, DYNAMODB_KEY_ID, DYNAMODB_KEY_SECRET, DYNAMODB_REGION, USERS_TABLE } from "../constants";
+import { ICreateUserInput, IUserAuthPayload } from "../graphql/schema";
+import Auth from "../modules/auth";
 
 export interface IErrorMessage {
   key: string;
   message: string;
 }
 
+const client = new DynamoDB.DocumentClient({
+  region: DYNAMODB_REGION,
+  endpoint: DYNAMODB_ENDPOINT,
+  credentials: DYNAMODB_REGION === "dev" ? {
+    accessKeyId: DYNAMODB_KEY_ID,
+    secretAccessKey: DYNAMODB_KEY_SECRET
+  } : undefined
+});
+
 export default class UserManager {
   public static async createUser(
-    params: ICreateUser
+    params: ICreateUserInput
   ): Promise<IUserAuthPayload> {
     const errors: IErrorMessage[] = [];
     const { username, pwFunc, pwFuncOptions, pwh } = params;
@@ -20,9 +29,6 @@ export default class UserManager {
     const uuid = uuidv5(lUsername, this.UUID_NAMESPACE);
 
     // validate username exists in db
-    const client = new DynamoDB.DocumentClient({
-      endpoint: DYNAMODB_ENDPOINT || undefined
-    });
     const checkUsernameParams: DynamoDB.DocumentClient.QueryInput = {
       TableName: USERS_TABLE,
       KeyConditionExpression: "#uuid = :uuid",
@@ -99,12 +105,10 @@ export default class UserManager {
     const lUsername = UserManager.validateUsername(username, errors);
     const uuid = uuidv5(lUsername, this.UUID_NAMESPACE);
 
-    const client = new DynamoDB.DocumentClient({
-      endpoint: DYNAMODB_ENDPOINT || undefined
-    });
     const checkUsernameParams: DynamoDB.DocumentClient.GetItemInput = {
       TableName: USERS_TABLE,
-      Key: { uuid: { S: uuid } }
+      Key: { uuid },
+      ProjectionExpression: "pwFunc, pwFuncOpts"
     };
     const output = await new Promise<DynamoDB.DocumentClient.GetItemOutput>(
       (resolve, reject) =>

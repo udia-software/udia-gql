@@ -1,18 +1,30 @@
 # Dockerfile for running the Udia graphql serverless api
 
-# Use Node LTS
-FROM node:10
+# Base stage is Amazon Linux
+FROM amazonlinux:latest as opsys
+WORKDIR /opt/app
 
-# Create the application directory
-RUN mkdir -p /usr/src/app
-WORKDIR /usr/src/app
+# Install necessary system dependencies
+RUN curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
+RUN yum install gcc gcc-c++ make nodejs -y
 
-# Install the application dependencies
-# Wildcard ensures both package.json & package-lock.json are copied
+# Build NodeJS (takes a terribly long time)
+# RUN curl https://nodejs.org/dist/v8.10.0/node-v8.10.0.tar.gz \
+#   --silent --show-error --output node-v8.10.0.tar.gz
+# RUN tar -xzf node-v8.10.0.tar.gz && \
+#   cd node-v8.10.0 && ./configure && make && make install
+
+# Copy the application source into the docker container
+COPY . .
 RUN npm install -g node-gyp
-COPY . ./
 RUN npm install
 
-# Bundle the application source
+# Rebuild required native libraries
+RUN cd /opt/app/node_modules/argon2 && CXX=gcc node-gyp rebuild
+RUN cd /opt/app/node_modules/bufferutil && CXX=gcc node-gyp rebuild
+RUN cd /opt/app/node_modules/utf-8-validate && CXX=gcc node-gyp rebuild
+
+# Run the application
+WORKDIR /opt/app
 EXPOSE 3000
 CMD [ "npm", "start" ]

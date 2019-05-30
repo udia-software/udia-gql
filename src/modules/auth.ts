@@ -1,6 +1,6 @@
 import { argon2id, hash, verify } from "argon2";
 import { sign, verify as jwtVerify } from "jsonwebtoken";
-import { JWT_SECRET } from "./constants";
+import { JWT_SECRET } from "../constants";
 
 export interface IJwtPayload {
   uuid?: string;
@@ -53,6 +53,7 @@ export default class Auth {
       return {};
     }
   }
+
   private static ARGON_OPTS = {
     hashLength: 32,
     saltLength: 16,
@@ -66,6 +67,7 @@ export default class Auth {
     algorithm: "HS256",
     expiresIn: "30d"
   };
+
   private static JWT_VERIFY_OPTS = {
     algorithms: ["HS256", ]
   };

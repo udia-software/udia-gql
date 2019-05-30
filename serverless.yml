@@ -7,7 +7,7 @@ plugins:
   - serverless-offline
 
 custom:
-  tableName: 'users-${self:service}-${opt:stage, self:provider.stage}'
+  usersTable: 'users-${self:service}-${opt:stage, self:provider.stage}'
   serverless-offline:
     host: 0.0.0.0
   dynamoDbEndpoint:
@@ -18,13 +18,13 @@ provider:
   name: aws
   runtime: nodejs8.10
   stage: ${opt:stage, 'dev'}
-  region: ${opt:region, 'ca-central-1'}
+  region: ${opt:region, 'us-west-2'}
+  cfnRole: arn:aws:iam::593583987155:role/Serverless_CloudFormation
   logRetentionInDays: 14
-  apiKeys:
-    - ${self:provider.stage}-gqlEndpointKey
   environment:
-    USERS_TABLE: ${self:custom.tableName}
+    USERS_TABLE: ${self:custom.usersTable}
     DYNAMODB_ENDPOINT: ${self:custom.dynamoDbEndpoint.${self:provider.stage}}
+    DYNAMODB_REGION: ${self:provider.stage}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -34,7 +34,7 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.USERS_TABLE}"
+      Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.usersTable}"
 
 resources:
   Resources:
@@ -45,17 +45,13 @@ resources:
         AttributeDefinitions:
           - AttributeName: uuid
             AttributeType: S
-          - AttributeName: username
-            AttributeType: S
         KeySchema:
           - AttributeName: uuid
             KeyType: HASH
-          - AttributeName: username
-            KeyType: RANGE
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-        TableName: ${self:custom.tableName}
+        TableName: ${self:custom.usersTable}
 
 functions:
   hello:
