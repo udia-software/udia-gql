@@ -23,12 +23,14 @@ export interface IUser {
  */
 const InputCreateUser = `input CreateUserInput {
   username: String!
+  email: String
   pwh: String!
   pwFunc: String!
   pwFuncOptions: PwFuncOptionsInput!
 }`;
 export interface ICreateUserInput {
   username: string;
+  email?: string;
   pwh: string;
   pwFunc: string;
   pwFuncOptions: IPwFuncOptions;
