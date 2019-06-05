@@ -23,9 +23,9 @@ It is necessary to build and deploy the application from Amazon Linux.
 ```bash
 docker build -t udia/amazon_linux .
 # ensure dynamodb container is stopped, as serverless requires port 8000
-docker run -it -p 8000:8000 -v $HOME/.aws:/root/.aws udia/amazon_linux /bin/bash
+docker run -it -p 8000:8000 -v $HOME/.serverlessrc:/root/.serverlessrc -v $HOME/.aws:/root/.aws udia/amazon_linux /bin/bash
 # within the container environment
-npx serverless login
+# npx serverless login
 # follow serverless instructions
 npm run deploy -- --stage prod
 ```

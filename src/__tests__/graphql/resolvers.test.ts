@@ -1,4 +1,4 @@
-import * as uuidv5 from "uuid/v5";
+import uuidv5 from "uuid/v5";
 import { USERS_TABLE, USERS_UUID_NS } from "../../constants";
 import { resolvers } from "../../graphql/resolvers";
 import { ICreateUserInput } from "../../graphql/schema";

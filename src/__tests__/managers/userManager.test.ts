@@ -1,4 +1,4 @@
-import * as uuidv5 from "uuid/v5";
+import uuidv5 from "uuid/v5";
 import { USERS_TABLE, USERS_UUID_NS } from "../../constants";
 import UserManager from "../../managers/userManager";
 import { client } from "../../modules/dbClient";

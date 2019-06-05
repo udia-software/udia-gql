@@ -1,0 +1,137 @@
+@font-face {
+  font-family: "Raleway";
+  src: url("fonts/raleway/Raleway-Regular.ttf") format("truetype");
+  font-display: fallback;
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Raleway";
+  src: url("fonts/raleway/Raleway-Italic.ttf") format("truetype");
+  font-display: fallback;
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Raleway";
+  src: url("fonts/raleway/Raleway-Light.ttf") format("truetype");
+  font-display: fallback;
+  font-weight: lighter;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Raleway";
+  src: url("fonts/raleway/Raleway-LightItalic.ttf") format("truetype");
+  font-display: fallback;
+  font-weight: lighter;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Raleway";
+  src: url("fonts/raleway/Raleway-Medium.ttf") format("truetype");
+  font-display: fallback;
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Raleway";
+  src: url("fonts/raleway/Raleway-MediumItalic.ttf") format("truetype");
+  font-display: fallback;
+  font-weight: bold;
+  font-style: italic;
+}
+
+html {
+  background-color: #141414;
+  color: #ffffff;
+  height: 100%;
+  width: 100%;
+  min-width: 320px;
+}
+
+#root,
+body {
+  padding: 0;
+  margin: 0;
+  min-height: 100vh;
+  min-width: 100%;
+  font-family: "Raleway", sans-serif;
+}
+
+button {
+  font-family: "Raleway", sans-serif;
+  font-size: medium;
+  font-weight: bold;
+}
+
+#no-script-content {
+  position: fixed;
+  bottom: 0.2em;
+  right: 0.2em;
+  padding: 0 0.2em;
+  background-color: #000000;
+  border-color: #ff595e;
+  border-radius: 3px;
+  border-width: 2px;
+  border-style: dashed;
+}
+
+#no-script-content > a {
+  transition: color 0.1s ease;
+  text-decoration: none;
+  color: hsla(0, 0%, 100%, 0.5);
+}
+
+#no-script-content > a:hover {
+  color: #ffffff;
+}
+
+#no-script-content > a > strong {
+  color: #ff595e;
+}
+
+.relative-transition-group {
+  position: relative;
+  height: 100%;
+}
+.page-fade-enter {
+  opacity: 0;
+}
+.page-fade-enter.page-fade-enter-active {
+  opacity: 1;
+  transition: 200ms opacity ease-in;
+}
+.page-fade-exit {
+  opacity: 0.8;
+}
+.page-fade-exit.page-fade-exit-active {
+  display: none;
+}
+
+.fade-enter {
+  opacity: 0;
+}
+.fade-enter.fade-enter-active {
+  opacity: 1;
+  transition: 200ms ease-in;
+}
+.fade-exit {
+  opacity: 0.8;
+  overflow: hidden;
+  height: auto;
+  max-height: 100%;
+}
+.fade-exit.fade-exit-active {
+  position: relative;
+  top: 0;
+  opacity: 0;
+  max-height: 0;
+  transition-property: opacity, max-height;
+  transition-duration: 200ms;
+  transition-timing-function: linear;
+}
