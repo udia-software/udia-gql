@@ -1,8 +1,24 @@
 @font-face {
   font-family: "Raleway";
-  src: url("fonts/raleway/Raleway-Regular.ttf") format("truetype");
+  src: url("fonts/raleway/Raleway-Medium.ttf") format("truetype");
   font-display: fallback;
   font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Raleway";
+  src: url("fonts/raleway/Raleway-MediumItalic.ttf") format("truetype");
+  font-display: fallback;
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "Raleway";
+  src: url("fonts/raleway/Raleway-Regular.ttf") format("truetype");
+  font-display: fallback;
+  font-weight: lighter;
   font-style: normal;
 }
 
@@ -10,29 +26,13 @@
   font-family: "Raleway";
   src: url("fonts/raleway/Raleway-Italic.ttf") format("truetype");
   font-display: fallback;
-  font-weight: normal;
-  font-style: italic;
-}
-
-@font-face {
-  font-family: "Raleway";
-  src: url("fonts/raleway/Raleway-Light.ttf") format("truetype");
-  font-display: fallback;
-  font-weight: lighter;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Raleway";
-  src: url("fonts/raleway/Raleway-LightItalic.ttf") format("truetype");
-  font-display: fallback;
   font-weight: lighter;
   font-style: italic;
 }
 
 @font-face {
   font-family: "Raleway";
-  src: url("fonts/raleway/Raleway-Medium.ttf") format("truetype");
+  src: url("fonts/raleway/Raleway-SemiBold.ttf") format("truetype");
   font-display: fallback;
   font-weight: bold;
   font-style: normal;
@@ -40,7 +40,7 @@
 
 @font-face {
   font-family: "Raleway";
-  src: url("fonts/raleway/Raleway-MediumItalic.ttf") format("truetype");
+  src: url("fonts/raleway/Raleway-SemiBoldItalic.ttf") format("truetype");
   font-display: fallback;
   font-weight: bold;
   font-style: italic;

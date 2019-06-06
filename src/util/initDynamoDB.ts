@@ -34,9 +34,29 @@ async function main() {
     await new Promise<DynamoDB.CreateTableOutput>((resolve, reject) =>
       client.createTable({
         TableName: USERS_TABLE,
-        AttributeDefinitions: [{ AttributeName: "uuid", AttributeType: "S" }],
-        KeySchema: [{ AttributeName: "uuid", KeyType: "HASH" }],
-        ProvisionedThroughput: { ReadCapacityUnits: 1, WriteCapacityUnits: 1 }
+        AttributeDefinitions: [
+          { AttributeName: "uuid", AttributeType: "S" },
+          { AttributeName: "type", AttributeType: "N" },
+          { AttributeName: "payload", AttributeType: "S" }
+        ],
+        BillingMode: "PAY_PER_REQUEST",
+        KeySchema: [
+          { AttributeName: "uuid", KeyType: "HASH" },
+          { AttributeName: "type", KeyType: "RANGE" }
+        ],
+        GlobalSecondaryIndexes: [
+          {
+            IndexName: "indexTypePayload",
+            KeySchema: [
+              { AttributeName: "type", KeyType: "HASH" },
+              { AttributeName: "payload", KeyType: "RANGE" }
+            ],
+            Projection: {
+              ProjectionType: "INCLUDE",
+              NonKeyAttributes: ["uuid"]
+            }
+          }
+        ]
       }, (err, data) => {
         if (err) { reject(err); } else { resolve(data); }
       })

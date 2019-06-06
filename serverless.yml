@@ -66,17 +66,32 @@ resources:
   Resources:
     UsersDynamoDbTable:
       Type: 'AWS::DynamoDB::Table'
-      DeletionPolicy: Retain
+      DeletionPolicy: Snapshot
       Properties:
         AttributeDefinitions:
           - AttributeName: uuid
             AttributeType: S
+          - AttributeName: type
+            AttributeType: N
+          - AttributeName: payload
+            AttributeType: S
+        BillingMode: PAY_PER_REQUEST
         KeySchema:
           - AttributeName: uuid
             KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
+          - AttributeName: type
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: indexTypePayload
+            KeySchema:
+              - AttributeName: type
+                KeyType: HASH
+              - AttributeName: payload
+                KeyType: RANGE
+            Projection:
+              ProjectionType: INCLUDE
+              NonKeyAttributes:
+                - uuid
         TableName: ${self:custom.usersTable}
 
 functions:
