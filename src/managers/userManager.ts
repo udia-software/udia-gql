@@ -11,8 +11,23 @@ export interface IErrorMessage {
   message: string;
 }
 
+interface IDyanmoUsername {
+  uuid: string;
+  type: number;
+  payload: string; // username
+  createdAt: number; // epoch milliseconds
+  pwFunc: string; // pbkdf2
+  pwFuncOptions: IPwFuncOptions;
+  pwServerHash: string; // argon2di output
+}
+
+/**
+ * DynamoDB wrapper for persisting user information
+ */
 export default class UserManager {
   public static MINIMUM_COST = 100000;
+  public static TYPE_USERNAME = 0;
+  public static TYPE_PRIMARY_EMAIL = 1;
 
   public static async createUser(
     params: ICreateUserInput
@@ -25,7 +40,8 @@ export default class UserManager {
     if (UserManager.isUsernameValid(lUsername, errors) &&
       UserManager.isPwFuncMetaValid({ pwFunc, pwFuncOptions }, errors) &&
       await UserManager.isUsernameAvailable(uuid, errors) &&
-      email !== undefined) {
+      email !== undefined
+    ) {
       // Optional email set, check if email parameter is valid
       if (UserManager.isEmailValid(email, errors)) {
         // check if email already exists
@@ -38,10 +54,19 @@ export default class UserManager {
     if (errors.length === 0) {
       const pwServerHash = await Auth.hashPassword(pwh);
       const createdAt = new Date().getTime();
+      const usernamePayload: IDyanmoUsername = {
+        uuid,
+        type: this.TYPE_USERNAME,
+        payload: username,
+        createdAt,
+        pwFunc,
+        pwFuncOptions,
+        pwServerHash
+      };
 
       const saveUserParams: DocumentClient.PutItemInput = {
         TableName: USERS_TABLE,
-        Item: { uuid, createdAt, username, pwFunc, pwFuncOptions, pwServerHash }
+        Item: usernamePayload
       };
 
       // if no errors, save the user to the database
@@ -75,7 +100,7 @@ export default class UserManager {
 
     const checkUsernameParams: DocumentClient.GetItemInput = {
       TableName: USERS_TABLE,
-      Key: { uuid },
+      Key: { uuid, type: this.TYPE_USERNAME },
       ProjectionExpression: "pwFunc, pwFuncOptions"
     };
     const output = await new Promise<DocumentClient.GetItemOutput>(
@@ -110,8 +135,8 @@ export default class UserManager {
     let isAvailable = true;
     const output = await new Promise<DocumentClient.GetItemOutput>((resolve, reject) => client.get({
       TableName: USERS_TABLE,
-      Key: { uuid },
-      ProjectionExpression: "username"
+      Key: { uuid, type: this.TYPE_USERNAME },
+      ProjectionExpression: "payload"
     }, (err, data) => {
       if (err) { reject(err); } else { resolve(data); }
     }));

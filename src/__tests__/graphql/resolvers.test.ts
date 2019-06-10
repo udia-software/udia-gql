@@ -2,6 +2,7 @@ import uuidv5 from "uuid/v5";
 import { USERS_TABLE, USERS_UUID_NS } from "../../constants";
 import { resolvers } from "../../graphql/resolvers";
 import { ICreateUserInput } from "../../graphql/schema";
+import UserManager from "../../managers/userManager";
 import { client } from "../../modules/dbClient";
 
 describe("graphql/resolvers.ts", () => {
@@ -11,7 +12,7 @@ describe("graphql/resolvers.ts", () => {
     const lUsername = username.normalize("NFKC").toLowerCase().trim();
     const uuid = uuidv5(lUsername, USERS_UUID_NS);
     const params = {
-      uuid, createdAt, username, pwFunc: "pbkdf2",
+      uuid, type: UserManager.TYPE_USERNAME, createdAt, payload: username, pwFunc: "pbkdf2",
       pwFuncOptions: { nonce: "QueryLongTestNonce", cost: 100000 },
       pwServerHash: "$argon2id$v=19$m=32768,t=7,p=2$.garbage"
     };
@@ -21,7 +22,7 @@ describe("graphql/resolvers.ts", () => {
         (err, data) => { if (err) { reject(err); } else { resolve(data); } })
     ));
     afterAll(() => new Promise((resolve, reject) =>
-      client.delete({ TableName: USERS_TABLE, Key: { uuid } },
+      client.delete({ TableName: USERS_TABLE, Key: { uuid, type: UserManager.TYPE_USERNAME } },
         (err, data) => { if (err) { reject(err); } else { resolve(data); } })
     ));
 
@@ -54,7 +55,7 @@ describe("graphql/resolvers.ts", () => {
     };
     const dbRemoveUser = () => new Promise((resolve, reject) =>
       client.delete(
-        { TableName: USERS_TABLE, Key: { uuid } },
+        { TableName: USERS_TABLE, Key: { uuid, type: UserManager.TYPE_USERNAME } },
         (err, data) => {
           if (err) { reject(err); } else { resolve(data); }
         })

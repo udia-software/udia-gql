@@ -44,19 +44,16 @@ async function main() {
           { AttributeName: "uuid", KeyType: "HASH" },
           { AttributeName: "type", KeyType: "RANGE" }
         ],
-        GlobalSecondaryIndexes: [
-          {
-            IndexName: "indexTypePayload",
-            KeySchema: [
-              { AttributeName: "type", KeyType: "HASH" },
-              { AttributeName: "payload", KeyType: "RANGE" }
-            ],
-            Projection: {
-              ProjectionType: "INCLUDE",
-              NonKeyAttributes: ["uuid"]
-            }
+        GlobalSecondaryIndexes: [{
+          IndexName: "PayloadIndex",
+          KeySchema: [
+            { AttributeName: "payload", KeyType: "HASH" }
+          ],
+          Projection: {
+            ProjectionType: "INCLUDE",
+            NonKeyAttributes: ["uuid", "type"]
           }
-        ]
+        }]
       }, (err, data) => {
         if (err) { reject(err); } else { resolve(data); }
       })

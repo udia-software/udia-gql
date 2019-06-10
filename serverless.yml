@@ -82,16 +82,15 @@ resources:
           - AttributeName: type
             KeyType: RANGE
         GlobalSecondaryIndexes:
-          - IndexName: indexTypePayload
+          - IndexName: PayloadIndex
             KeySchema:
-              - AttributeName: type
-                KeyType: HASH
               - AttributeName: payload
-                KeyType: RANGE
+                KeyType: HASH
             Projection:
               ProjectionType: INCLUDE
               NonKeyAttributes:
                 - uuid
+                - type
         TableName: ${self:custom.usersTable}
 
 functions:

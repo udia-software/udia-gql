@@ -16,7 +16,7 @@ describe("managers/userManager.ts", () => {
     };
     const dbRemoveUser = () => new Promise((resolve, reject) =>
       client.delete(
-        { TableName: USERS_TABLE, Key: { uuid } },
+        { TableName: USERS_TABLE, Key: { uuid, type: UserManager.TYPE_USERNAME } },
         (err, data) => {
           if (err) { reject(err); } else { resolve(data); }
         })
@@ -61,7 +61,7 @@ describe("managers/userManager.ts", () => {
     const lUsername = username.normalize("NFKC").toLowerCase().trim();
     const uuid = uuidv5(lUsername, USERS_UUID_NS);
     const params = {
-      uuid, createdAt, username, pwFunc: "pbkdf2",
+      uuid, type: UserManager.TYPE_USERNAME, createdAt, payload: username, pwFunc: "pbkdf2",
       pwFuncOptions: { nonce: "GetUserAuthTestNonce", cost: 100000 },
       pwServerHash: "$argon2id$v=19$m=32768,t=7,p=2$.garbage"
     };
@@ -71,7 +71,7 @@ describe("managers/userManager.ts", () => {
         (err, data) => { if (err) { reject(err); } else { resolve(data); } })
     ));
     afterAll(() => new Promise((resolve, reject) =>
-      client.delete({ TableName: USERS_TABLE, Key: { uuid } },
+      client.delete({ TableName: USERS_TABLE, Key: { uuid, type: UserManager.TYPE_USERNAME } },
         (err, data) => { if (err) { reject(err); } else { resolve(data); } })
     ));
 
