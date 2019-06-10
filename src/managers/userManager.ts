@@ -1,6 +1,6 @@
 import { UserInputError } from "apollo-server-core";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
-import * as uuidv5 from "uuid/v5";
+import uuidv5 from "uuid/v5";
 import { USERS_TABLE, USERS_UUID_NS } from "../constants";
 import { ICreateUserInput, IPwFuncOptions, IUserAuthParams, IUserAuthPayload } from "../graphql/schema";
 import Auth from "../modules/auth";

@@ -1,9 +1,12 @@
 service: udia-gql
 app: udia
 tenant: awwong1
+frameworkVersion: ">=1.44.1 <2.0.0"
 
 plugins:
   - serverless-plugin-typescript
+  - serverless-simple-parcel
+  - serverless-apigw-binary
   - serverless-offline
 
 custom:
@@ -13,6 +16,23 @@ custom:
   dynamoDbEndpoint:
     prod: ''
     dev: 'http://localhost:8000'
+  nodeEnv:
+    prod: "production"
+    dev: "development"
+  minifyStage:
+    prod: true
+    dev: false
+  parcel:
+    options:
+      minify: ${self:custom.minifyStage.${self:provider.stage}}
+      watch: true
+    entries:
+      - file: src/public/index.html
+        outDir: .build/src/public
+        target: browser
+  apigwBinary:
+    types:
+      - "*/*"
 
 provider:
   name: aws
@@ -22,6 +42,7 @@ provider:
   cfnRole: arn:aws:iam::593583987155:role/Serverless_CloudFormation
   logRetentionInDays: 14
   environment:
+    NODE_ENV: ${self:custom.nodeEnv.${self:provider.stage}}
     USERS_TABLE: ${self:custom.usersTable}
     DYNAMODB_ENDPOINT: ${self:custom.dynamoDbEndpoint.${self:provider.stage}}
     DYNAMODB_REGION: ${self:provider.region}
@@ -64,7 +85,7 @@ functions:
     memorySize: 128
     events:
       - http:
-          method: get
+          method: GET
           path: hello
   graphql:
     handler: src/handlerGraphQL.graphql
@@ -75,3 +96,9 @@ functions:
           method: ANY
           path: graphql
           cors: true
+  express:
+    handler: src/handlerExpress.express
+    memorySize: 192
+    events:
+      - http: ANY /
+      - http: ANY {proxy+}

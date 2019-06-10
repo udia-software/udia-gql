@@ -1,23 +1,34 @@
 {
+  "compileOnSave": true,
   "compilerOptions": {
-    "lib": [
-      "es2017",
-      "es2015.promise",
-      "esnext.asynciterable"
-    ],
+    "target": "es2015",
+    "module": "commonjs",
+    "lib": ["esnext", "dom"],
+    "rootDir": "./",
+    "outDir": ".build",
     "strict": true,
     "moduleResolution": "node",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "declaration": true,
+    "declarationMap": true,
     "sourceMap": true,
-    "target": "es5",
     "preserveConstEnums": true,
     "strictNullChecks": true,
+    "esModuleInterop": true,
+    "jsx": "react",
     "plugins": [
-      {"name": "typescript-tslint-plugin"}
-    ]
+      {
+        "name": "typescript-tslint-plugin"
+      }
+    ],
+    "types": ["node", "jest"]
   },
+  "include": [
+    "src/**/*"
+  ],
   "exclude": [
-    "node_modules"
+    "node_modules/**/*",
+    "**/public/client.ts"
   ]
 }

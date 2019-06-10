@@ -6,7 +6,7 @@ WORKDIR /opt/app
 
 # Install necessary system dependencies
 RUN curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
-RUN yum install gcc gcc-c++ make nodejs -y
+RUN yum install util-linux gcc gcc-c++ make nodejs -y
 
 # Build NodeJS (takes a terribly long time)
 # RUN curl https://nodejs.org/dist/v8.10.0/node-v8.10.0.tar.gz \
