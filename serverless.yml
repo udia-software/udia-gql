@@ -73,7 +73,7 @@ resources:
             AttributeType: S
           - AttributeName: type
             AttributeType: N
-          - AttributeName: payload
+          - AttributeName: payloadId
             AttributeType: S
         BillingMode: PAY_PER_REQUEST
         KeySchema:
@@ -84,13 +84,14 @@ resources:
         GlobalSecondaryIndexes:
           - IndexName: PayloadIndex
             KeySchema:
-              - AttributeName: payload
+              - AttributeName: payloadId
                 KeyType: HASH
             Projection:
               ProjectionType: INCLUDE
               NonKeyAttributes:
                 - uuid
                 - type
+                - payload
         TableName: ${self:custom.usersTable}
 
 functions:

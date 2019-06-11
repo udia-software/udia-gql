@@ -5,7 +5,7 @@ import { UserInputError } from "apollo-server-core";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import uuidv4 from "uuid/v4";
 import uuidv5 from "uuid/v5";
-import { EMAILS_UUID_NS, USERS_TABLE, USERS_UUID_NS } from "../constants";
+import { EMAILS_UUID_NS, ENCRYPT_UUID_NS, SIGN_UUID_NS, USERS_TABLE, USERS_UUID_NS } from "../constants";
 import { ICreateUserInput, IPwFuncOptions, IUserAuthParams, IUserAuthPayload } from "../graphql/schema";
 import Auth from "../modules/auth";
 import { client } from "../modules/dbClient";
@@ -17,13 +17,15 @@ export interface IErrorMessage {
 
 type TYPE_USERNAME = 0;
 type TYPE_EMAIL = 1;
+type TYPE_SIGN_KEY = 2;
+type TYPE_ENCRYPT_KEY = 3;
 
-export interface IDyanmoUsername {
+interface IDyanmoUsername {
   uuid: string;
   type: TYPE_USERNAME;
-  payloadId: string; // username > NFKC > lowercase > uuidv5
+  payloadId: string; // username > NFKC > trim > lowercase > uuidv5
   payload: {
-    username: string;
+    username: string; // username > NFKC > trim
     createdAt: number; // epoch milliseconds
     pwFunc: string; // pbkdf2
     pwFuncOptions: IPwFuncOptions;
@@ -34,12 +36,25 @@ export interface IDyanmoUsername {
 interface IDynamoEmail {
   uuid: string;
   type: TYPE_EMAIL;
-  payloadId: string;
+  payloadId: string; // email > NFKC > trim > lowercase > uuidv5
   payload: {
-    email: string;
+    email: string; // // email > NFKC > trim
     isVerified: boolean;
     lastModifiedAt: number; // epoch ms
     verificationHash?: string // argon2di output
+  };
+}
+
+interface IDynamoKey {
+  uuid: string;
+  type: TYPE_SIGN_KEY | TYPE_ENCRYPT_KEY;
+  payloadId: string; // publicKey > uuidv5
+  payload: {
+    publicKey: string; // base64 string
+    encKeyPayload: {
+      enc: string;
+      nonce: string;
+    }
   };
 }
 
@@ -47,13 +62,15 @@ export default class UserManager {
   public static MINIMUM_COST = 100000;
   public static TYPE_USERNAME: TYPE_USERNAME = 0;
   public static TYPE_PRIMARY_EMAIL: TYPE_EMAIL = 1;
+  public static TYPE_SIGN_KEY: TYPE_SIGN_KEY = 2;
+  public static TYPE_ENCRYPT_KEY: TYPE_ENCRYPT_KEY = 3;
 
   public static async createUser(
     params: ICreateUserInput,
     uuid = uuidv4(),
   ): Promise<IUserAuthPayload> {
     const errors: IErrorMessage[] = [];
-    const { username, pwFunc, pwFuncOptions, pwh, email } = params;
+    const { username, pwFunc, pwFuncOptions, pwh, email, signKeyPayload, encryptKeyPayload } = params;
 
     // perform verification & validation
     let valid = this.isUsernameValid(username, errors);
@@ -72,7 +89,7 @@ export default class UserManager {
       if (valid) {
         const nEmail = email.normalize("NFKC").trim();
         const emailId = uuidv5(nEmail.toLowerCase(), EMAILS_UUID_NS);
-        const emailPayload: IDynamoEmail = {
+        const emailPayloadAction: IDynamoEmail = {
           uuid,
           type: this.TYPE_PRIMARY_EMAIL,
           payloadId: emailId,
@@ -82,13 +99,31 @@ export default class UserManager {
             lastModifiedAt: now
           }
         };
-        rawBatchWriteActions.push({ PutRequest: { Item: emailPayload } });
+        rawBatchWriteActions.push({ PutRequest: { Item: emailPayloadAction } });
       }
     }
 
     if (valid) {
+      // Persist sign and encryption key payloads
+      const signKeyPayloadAction: IDynamoKey = {
+        uuid,
+        type: this.TYPE_SIGN_KEY,
+        payloadId: uuidv5(signKeyPayload.publicKey, SIGN_UUID_NS),
+        payload: signKeyPayload
+      };
+      rawBatchWriteActions.push({ PutRequest: { Item: signKeyPayloadAction } });
+
+      const cryptKeyPayloadAction: IDynamoKey = {
+        uuid,
+        type: this.TYPE_ENCRYPT_KEY,
+        payloadId: uuidv5(encryptKeyPayload.publicKey, ENCRYPT_UUID_NS),
+        payload: encryptKeyPayload
+      };
+      rawBatchWriteActions.push({ PutRequest: { Item: cryptKeyPayloadAction } });
+
+      // Manage base username payload
       const pwServerHash = await Auth.hashPassword(pwh);
-      const usernamePayload: IDyanmoUsername = {
+      const usernamePayloadAction: IDyanmoUsername = {
         uuid,
         type: this.TYPE_USERNAME,
         payloadId: usernameId,
@@ -100,8 +135,8 @@ export default class UserManager {
           pwServerHash
         }
       };
-      rawBatchWriteActions.push({ PutRequest: { Item: usernamePayload } });
-      const batchSaveUserParams: DocumentClient.BatchWriteItemInput = {
+      rawBatchWriteActions.push({ PutRequest: { Item: usernamePayloadAction } });
+      const batchSaveUserParams = {
         RequestItems: { [USERS_TABLE]: rawBatchWriteActions }
       };
       // if no errors, save the user to the database

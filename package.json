@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "serverless offline start",
-    "test": "jest",
+    "test": "jest --verbose",
     "posttest": "npm run lint",
     "lint": "tslint --project . --config tslint.json",
     "debug": "SLS_DEBUG=* node --inspect node_modules/.bin/serverless offline --stage dev",

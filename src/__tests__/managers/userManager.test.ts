@@ -2,7 +2,7 @@ import uuidv4 from "uuid/v4";
 import uuidv5 from "uuid/v5";
 import { USERS_TABLE, USERS_UUID_NS } from "../../constants";
 import { ICreateUserInput } from "../../graphql/schema";
-import UserManager, { IDyanmoUsername } from "../../managers/userManager";
+import UserManager from "../../managers/userManager";
 import { client } from "../../modules/dbClient";
 
 describe("managers/userManager.ts", () => {
@@ -11,11 +11,33 @@ describe("managers/userManager.ts", () => {
     const uuid = uuidv4();
     const resolverParams: ICreateUserInput = {
       username, pwFunc: "pbkdf2", pwFuncOptions: { nonce: "CreateUserTestNonce", cost: 100000 },
-      pwh: "NeZZOxsAeSiAfR9cwLi36SrjS7gypsBL8yNnvbWi9kA="
+      pwh: "NeZZOxsAeSiAfR9cwLi36SrjS7gypsBL8yNnvbWi9kA=",
+      email: `${username}@udia.ca`,
+      signKeyPayload: {
+        publicKey: "stubPublicSignKey",
+        encKeyPayload: {
+          enc: "stubEncSecretSignKey",
+          nonce: "stubEncSecretSignKeyNonce"
+        }
+      },
+      encryptKeyPayload: {
+        publicKey: "stubPublicEncryptKey",
+        encKeyPayload: {
+          enc: "stubEncSecretEncryptKey",
+          nonce: "stubEncSecretEncryptKeyNonce"
+        }
+      }
     };
     const dbRemoveUser = () => new Promise((resolve, reject) =>
-      client.delete(
-        { TableName: USERS_TABLE, Key: { uuid, type: UserManager.TYPE_USERNAME } },
+      client.batchWrite(
+        {
+          RequestItems: {
+            [USERS_TABLE]: [
+              { DeleteRequest: { Key: { uuid, type: UserManager.TYPE_USERNAME } } },
+              { DeleteRequest: { Key: { uuid, type: UserManager.TYPE_PRIMARY_EMAIL } } },
+            ]
+          }
+        },
         (err, data) => {
           if (err) { reject(err); } else { resolve(data); }
         })
@@ -59,7 +81,7 @@ describe("managers/userManager.ts", () => {
     const uuid = uuidv4();
     const lUsername = username.normalize("NFKC").toLowerCase().trim();
     const payloadId = uuidv5(lUsername, USERS_UUID_NS);
-    const params: IDyanmoUsername = {
+    const params = {
       uuid, type: UserManager.TYPE_USERNAME, payloadId, payload: {
         username, pwFunc: "pbkdf2",
         pwFuncOptions: { nonce: "GetUserAuthTestNonce", cost: 100000 },

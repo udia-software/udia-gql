@@ -3,7 +3,7 @@ import uuidv5 from "uuid/v5";
 import { USERS_TABLE, USERS_UUID_NS } from "../../constants";
 import { resolvers } from "../../graphql/resolvers";
 import { ICreateUserInput } from "../../graphql/schema";
-import UserManager, { IDyanmoUsername } from "../../managers/userManager";
+import UserManager from "../../managers/userManager";
 import { client } from "../../modules/dbClient";
 
 describe("graphql/resolvers.ts", () => {
@@ -13,7 +13,7 @@ describe("graphql/resolvers.ts", () => {
     const lUsername = username.normalize("NFKC").toLowerCase().trim();
     const uuid = uuidv4();
     const usernameId = uuidv5(lUsername, USERS_UUID_NS);
-    const params: IDyanmoUsername = {
+    const params = {
       uuid, type: UserManager.TYPE_USERNAME,
       payloadId: usernameId,
       payload: {
@@ -56,14 +56,42 @@ describe("graphql/resolvers.ts", () => {
       username, pwFunc: "pbkdf2", pwFuncOptions: {
         nonce: "CreateUserMutationTestNonce", cost: 100000
       },
-      pwh: "NeZZOxsAeSiAfR9cwLi36SrjS7gypsBL8yNnvbWi9kA="
+      pwh: "NeZZOxsAeSiAfR9cwLi36SrjS7gypsBL8yNnvbWi9kA=",
+      signKeyPayload: {
+        publicKey: "stubPublicSignKey",
+        encKeyPayload: {
+          enc: "stubEncSecretSignKey",
+          nonce: "stubEncSecretSignKeyNonce"
+        }
+      },
+      encryptKeyPayload: {
+        publicKey: "stubPublicEncryptKey",
+        encKeyPayload: {
+          enc: "stubEncSecretEncryptKey",
+          nonce: "stubEncSecretEncryptKeyNonce"
+        }
+      }
     };
 
     it("calls createUser", async () => {
       expect.assertions(8);
       const data: ICreateUserInput = {
         username: "", pwh: "", pwFunc: "",
-        pwFuncOptions: { nonce: "", cost: -1 }
+        pwFuncOptions: { nonce: "", cost: -1 },
+        signKeyPayload: {
+          publicKey: "stubPublicSignKey",
+          encKeyPayload: {
+            enc: "stubEncSecretSignKey",
+            nonce: "stubEncSecretSignKeyNonce"
+          }
+        },
+        encryptKeyPayload: {
+          publicKey: "stubPublicEncryptKey",
+          encKeyPayload: {
+            enc: "stubEncSecretEncryptKey",
+            nonce: "stubEncSecretEncryptKeyNonce"
+          }
+        }
       };
       const userPayload = await resolvers.Mutation.createUser(undefined, { data: params });
       expect(userPayload).toHaveProperty("jwt");
