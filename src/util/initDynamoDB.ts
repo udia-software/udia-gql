@@ -37,7 +37,7 @@ async function main() {
         AttributeDefinitions: [
           { AttributeName: "uuid", AttributeType: "S" },
           { AttributeName: "type", AttributeType: "N" },
-          { AttributeName: "payload", AttributeType: "S" }
+          { AttributeName: "payloadId", AttributeType: "S" }
         ],
         BillingMode: "PAY_PER_REQUEST",
         KeySchema: [
@@ -47,11 +47,11 @@ async function main() {
         GlobalSecondaryIndexes: [{
           IndexName: "PayloadIndex",
           KeySchema: [
-            { AttributeName: "payload", KeyType: "HASH" }
+            { AttributeName: "payloadId", KeyType: "HASH" }
           ],
           Projection: {
             ProjectionType: "INCLUDE",
-            NonKeyAttributes: ["uuid", "type"]
+            NonKeyAttributes: ["uuid", "type", "payload"]
           }
         }]
       }, (err, data) => {

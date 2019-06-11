@@ -1,5 +1,9 @@
+/**
+ * Persisting user information into DynamoDB
+ */
 import { UserInputError } from "apollo-server-core";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
+import uuidv4 from "uuid/v4";
 import uuidv5 from "uuid/v5";
 import { USERS_TABLE, USERS_UUID_NS } from "../constants";
 import { ICreateUserInput, IPwFuncOptions, IUserAuthParams, IUserAuthPayload } from "../graphql/schema";
@@ -11,57 +15,72 @@ export interface IErrorMessage {
   message: string;
 }
 
-interface IDyanmoUsername {
+type TYPE_USERNAME = 0;
+type TYPE_EMAIL = 1;
+
+export interface IDyanmoUsername {
   uuid: string;
-  type: number;
-  payload: string; // username
-  createdAt: number; // epoch milliseconds
-  pwFunc: string; // pbkdf2
-  pwFuncOptions: IPwFuncOptions;
-  pwServerHash: string; // argon2di output
+  type: TYPE_USERNAME;
+  payloadId: string; // username > NFKC > lowercase > uuidv5
+  payload: {
+    username: string;
+    createdAt: number; // epoch milliseconds
+    pwFunc: string; // pbkdf2
+    pwFuncOptions: IPwFuncOptions;
+    pwServerHash: string; // argon2di output
+  };
 }
 
-/**
- * DynamoDB wrapper for persisting user information
- */
+// interface IDynamoEmail {
+//   uuid: string;
+//   type: TYPE_EMAIL;
+//   payloadId: string;
+//   payload: string; // email
+// }
+
 export default class UserManager {
   public static MINIMUM_COST = 100000;
-  public static TYPE_USERNAME = 0;
-  public static TYPE_PRIMARY_EMAIL = 1;
+  public static TYPE_USERNAME: TYPE_USERNAME = 0;
+  public static TYPE_PRIMARY_EMAIL: TYPE_EMAIL = 1;
 
   public static async createUser(
-    params: ICreateUserInput
+    params: ICreateUserInput,
+    uuid = uuidv4(),
   ): Promise<IUserAuthPayload> {
     const errors: IErrorMessage[] = [];
     const { username, pwFunc, pwFuncOptions, pwh, email } = params;
     const lUsername = username.normalize("NFKC").toLowerCase().trim();
-    const uuid = uuidv5(lUsername, USERS_UUID_NS);
+    const usernameId = uuidv5(lUsername, USERS_UUID_NS);
 
-    if (UserManager.isUsernameValid(lUsername, errors) &&
-      UserManager.isPwFuncMetaValid({ pwFunc, pwFuncOptions }, errors) &&
-      await UserManager.isUsernameAvailable(uuid, errors) &&
-      email !== undefined
-    ) {
+    // perform verification & validation
+    let valid = UserManager.isUsernameValid(lUsername, errors);
+    valid = valid && UserManager.isPwFuncMetaValid({ pwFunc, pwFuncOptions }, errors);
+    valid = valid && await UserManager.isUsernameAvailable(usernameId, errors);
+
+    if (valid && email !== undefined) {
       // Optional email set, check if email parameter is valid
-      if (UserManager.isEmailValid(email, errors)) {
+      valid = valid && UserManager.isEmailValid(email, errors);
+      if (valid) {
         // check if email already exists
         // tslint:disable-next-line: no-console
         console.log("todo");
       }
     }
 
-    // Hash the provided password hash secret, do not use client provided opts
-    if (errors.length === 0) {
+    if (valid) {
       const pwServerHash = await Auth.hashPassword(pwh);
       const createdAt = new Date().getTime();
       const usernamePayload: IDyanmoUsername = {
         uuid,
         type: this.TYPE_USERNAME,
-        payload: username,
-        createdAt,
-        pwFunc,
-        pwFuncOptions,
-        pwServerHash
+        payloadId: usernameId,
+        payload: {
+          username,
+          createdAt,
+          pwFunc,
+          pwFuncOptions,
+          pwServerHash
+        }
       };
 
       const saveUserParams: DocumentClient.PutItemInput = {
@@ -95,30 +114,33 @@ export default class UserManager {
   public static async getUserAuthParams(username: string): Promise<IUserAuthParams> {
     const errors: IErrorMessage[] = [];
     const lUsername = username.normalize("NFKC").toLowerCase().trim();
-    UserManager.isUsernameValid(lUsername, errors);
-    const uuid = uuidv5(lUsername, USERS_UUID_NS);
-
-    const checkUsernameParams: DocumentClient.GetItemInput = {
-      TableName: USERS_TABLE,
-      Key: { uuid, type: this.TYPE_USERNAME },
-      ProjectionExpression: "pwFunc, pwFuncOptions"
-    };
-    const output = await new Promise<DocumentClient.GetItemOutput>(
-      (resolve, reject) =>
-        client.get(checkUsernameParams, (err, data) => {
-          if (err) { reject(err); } else { resolve(data); }
-        })
-    );
-    if (output.Item) {
-      return {
-        pwFunc: output.Item.pwFunc,
-        pwFuncOptions: output.Item.pwFuncOptions
+    const valid = UserManager.isUsernameValid(lUsername, errors);
+    if (valid) {
+      const usernameId = uuidv5(lUsername, USERS_UUID_NS);
+      const checkUsernameParams: DocumentClient.QueryInput = {
+        TableName: USERS_TABLE,
+        IndexName: "PayloadIndex",
+        KeyConditionExpression: "payloadId = :usernameId",
+        ExpressionAttributeValues: { ":usernameId": usernameId },
+        ProjectionExpression: "payload"
       };
-    } else {
-      throw new UserInputError("User does not exist", [
-        { key: "username", message: "User does not exist." }
-      ]);
+      const output = await new Promise<DocumentClient.QueryOutput>(
+        (resolve, reject) =>
+          client.query(checkUsernameParams, (err, data) => {
+            if (err) { reject(err); } else { resolve(data); }
+          })
+      );
+      if (output.Count && output.Items) {
+        const projection = output.Items[0];
+        return {
+          pwFunc: projection.payload.pwFunc,
+          pwFuncOptions: projection.payload.pwFuncOptions
+        };
+      }
     }
+    throw new UserInputError("User does not exist", [
+      { key: "username", message: "User does not exist." }
+    ]);
   }
 
   private static isEmailValid(email: string, errors: IErrorMessage[]) {
@@ -131,16 +153,19 @@ export default class UserManager {
     return isValid;
   }
 
-  private static async isUsernameAvailable(uuid: string, errors: IErrorMessage[]) {
+  private static async isUsernameAvailable(usernameId: string, errors: IErrorMessage[]) {
     let isAvailable = true;
-    const output = await new Promise<DocumentClient.GetItemOutput>((resolve, reject) => client.get({
+    const output = await new Promise<DocumentClient.QueryOutput>((resolve, reject) => client.query({
       TableName: USERS_TABLE,
-      Key: { uuid, type: this.TYPE_USERNAME },
-      ProjectionExpression: "payload"
+      IndexName: "PayloadIndex",
+      KeyConditionExpression: "payloadId = :usernameId",
+      ExpressionAttributeValues: { ":usernameId": usernameId },
+      ExpressionAttributeNames: { "#uuid": "uuid" },
+      ProjectionExpression: "#uuid"
     }, (err, data) => {
       if (err) { reject(err); } else { resolve(data); }
     }));
-    if (output.Item) {
+    if (output.Count) {
       errors.push({ key: "username", message: "Username is already taken." });
       isAvailable = false;
     }
