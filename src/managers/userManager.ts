@@ -5,7 +5,7 @@ import { UserInputError } from "apollo-server-core";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import uuidv4 from "uuid/v4";
 import uuidv5 from "uuid/v5";
-import { USERS_TABLE, USERS_UUID_NS } from "../constants";
+import { EMAILS_UUID_NS, USERS_TABLE, USERS_UUID_NS } from "../constants";
 import { ICreateUserInput, IPwFuncOptions, IUserAuthParams, IUserAuthPayload } from "../graphql/schema";
 import Auth from "../modules/auth";
 import { client } from "../modules/dbClient";
@@ -31,12 +31,17 @@ export interface IDyanmoUsername {
   };
 }
 
-// interface IDynamoEmail {
-//   uuid: string;
-//   type: TYPE_EMAIL;
-//   payloadId: string;
-//   payload: string; // email
-// }
+interface IDynamoEmail {
+  uuid: string;
+  type: TYPE_EMAIL;
+  payloadId: string;
+  payload: {
+    email: string;
+    isVerified: boolean;
+    lastModifiedAt: number; // epoch ms
+    verificationHash?: string // argon2di output
+  };
+}
 
 export default class UserManager {
   public static MINIMUM_COST = 100000;
@@ -49,49 +54,60 @@ export default class UserManager {
   ): Promise<IUserAuthPayload> {
     const errors: IErrorMessage[] = [];
     const { username, pwFunc, pwFuncOptions, pwh, email } = params;
-    const lUsername = username.normalize("NFKC").toLowerCase().trim();
-    const usernameId = uuidv5(lUsername, USERS_UUID_NS);
 
     // perform verification & validation
-    let valid = UserManager.isUsernameValid(lUsername, errors);
-    valid = valid && UserManager.isPwFuncMetaValid({ pwFunc, pwFuncOptions }, errors);
-    valid = valid && await UserManager.isUsernameAvailable(usernameId, errors);
+    let valid = this.isUsernameValid(username, errors);
+    valid = valid && this.isPwFuncMetaValid({ pwFunc, pwFuncOptions }, errors);
+    const nUsername = username.normalize("NFKC").trim();
+    const usernameId = uuidv5(nUsername.toLowerCase(), USERS_UUID_NS);
+    valid = valid && await this.isUsernameAvailable(usernameId, errors);
+
+    const now = new Date().getTime();
+    const rawBatchWriteActions: DocumentClient.WriteRequests = [];
 
     if (valid && email !== undefined) {
       // Optional email set, check if email parameter is valid
-      valid = valid && UserManager.isEmailValid(email, errors);
+      valid = valid && this.isEmailValid(email, errors);
+      valid = valid && await this.isEmailAvailable(email, errors);
       if (valid) {
-        // check if email already exists
-        // tslint:disable-next-line: no-console
-        console.log("todo");
+        const nEmail = email.normalize("NFKC").trim();
+        const emailId = uuidv5(nEmail.toLowerCase(), EMAILS_UUID_NS);
+        const emailPayload: IDynamoEmail = {
+          uuid,
+          type: this.TYPE_PRIMARY_EMAIL,
+          payloadId: emailId,
+          payload: {
+            email: nEmail,
+            isVerified: false,
+            lastModifiedAt: now
+          }
+        };
+        rawBatchWriteActions.push({ PutRequest: { Item: emailPayload } });
       }
     }
 
     if (valid) {
       const pwServerHash = await Auth.hashPassword(pwh);
-      const createdAt = new Date().getTime();
       const usernamePayload: IDyanmoUsername = {
         uuid,
         type: this.TYPE_USERNAME,
         payloadId: usernameId,
         payload: {
-          username,
-          createdAt,
+          username: nUsername,
+          createdAt: now,
           pwFunc,
           pwFuncOptions,
           pwServerHash
         }
       };
-
-      const saveUserParams: DocumentClient.PutItemInput = {
-        TableName: USERS_TABLE,
-        Item: usernamePayload
+      rawBatchWriteActions.push({ PutRequest: { Item: usernamePayload } });
+      const batchSaveUserParams: DocumentClient.BatchWriteItemInput = {
+        RequestItems: { [USERS_TABLE]: rawBatchWriteActions }
       };
-
       // if no errors, save the user to the database
-      await new Promise<DocumentClient.PutItemOutput>(
+      await new Promise<DocumentClient.BatchWriteItemOutput>(
         (resolve, reject) =>
-          client.put(saveUserParams, (err, data) => {
+          client.batchWrite(batchSaveUserParams, (err, data) => {
             if (err) { reject(err); } else { resolve(data); }
           })
       );
@@ -100,10 +116,10 @@ export default class UserManager {
         jwt: Auth.signUserJWT(uuid),
         user: {
           uuid,
-          username,
+          username: nUsername,
           pwFunc,
           pwFuncOptions,
-          createdAt
+          createdAt: now
         }
       };
     } else {
@@ -113,7 +129,7 @@ export default class UserManager {
 
   public static async getUserAuthParams(username: string): Promise<IUserAuthParams> {
     const errors: IErrorMessage[] = [];
-    const lUsername = username.normalize("NFKC").toLowerCase().trim();
+    const lUsername = username.normalize("NFKC").trim().toLowerCase();
     const valid = UserManager.isUsernameValid(lUsername, errors);
     if (valid) {
       const usernameId = uuidv5(lUsername, USERS_UUID_NS);
@@ -141,6 +157,26 @@ export default class UserManager {
     throw new UserInputError("User does not exist", [
       { key: "username", message: "User does not exist." }
     ]);
+  }
+
+  private static async isEmailAvailable(email: string, errors: IErrorMessage[]) {
+    let isAvailable = true;
+    const emailId = uuidv5(email.normalize("NFKC").toLowerCase().trim(), EMAILS_UUID_NS);
+    const output = await new Promise<DocumentClient.QueryOutput>((resolve, reject) => client.query({
+      TableName: USERS_TABLE,
+      IndexName: "PayloadIndex",
+      KeyConditionExpression: "payloadId = :emailId",
+      ExpressionAttributeValues: { ":emailId": emailId },
+      ExpressionAttributeNames: { "#uuid": "uuid" },
+      ProjectionExpression: "#uuid"
+    }, (err, data) => {
+      if (err) { reject(err); } else { resolve(data); }
+    }));
+    if (output.Count) {
+      errors.push({ key: "email", message: "Email is already taken." });
+      isAvailable = false;
+    }
+    return isAvailable;
   }
 
   private static isEmailValid(email: string, errors: IErrorMessage[]) {
@@ -172,22 +208,23 @@ export default class UserManager {
     return isAvailable;
   }
 
-  private static isUsernameValid(lUsername: string, errors: IErrorMessage[]) {
+  private static isUsernameValid(username: string, errors: IErrorMessage[]) {
+    const nUsername = username.normalize("NFKC").trim();
     let isValid = true;
-    if (lUsername.length > 24) {
+    if (nUsername.length > 24) {
       errors.push({
         key: "username",
         message: "Username is too long (over 24 characters)."
       });
       isValid = false;
-    } else if (lUsername.length < 3) {
+    } else if (nUsername.length < 3) {
       errors.push({
         key: "username",
         message: "Username is too short (under 3 characters)."
       });
       isValid = false;
     }
-    if (RegExp("\\s", "g").test(lUsername)) {
+    if (RegExp("\\s", "g").test(nUsername)) {
       errors.push({
         key: "username",
         message: "Username should not contain whitespace."
