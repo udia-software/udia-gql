@@ -14,16 +14,17 @@ interface IAugmentedWindow extends Window {
 declare const window: IAugmentedWindow;
 // https://github.com/parcel-bundler/parcel/issues/314#issuecomment-451423914
 if ((module as any).hot) {
-  (module as any).hot.dispose(() => window.__PRELOADED_REDUX_DATA__ = store.getState());
+  (module as any).hot.dispose(
+    () => (window.__PRELOADED_REDUX_DATA__ = store.getState())
+  );
 }
 
 const preloadedState = window.__PRELOADED_REDUX_DATA__;
 const store = createStore(rootReducer, preloadedState);
-
 const appDom = document.getElementById("root");
 const appLayout = createElement(ApplicationLayout);
 const withRouter = createElement(BrowserRouter, undefined, appLayout);
-const withRedux = createElement(ReduxProvider, {store}, withRouter);
+const withRedux = createElement(ReduxProvider, { store }, withRouter);
 const withHelmet = createElement(HelmetProvider, undefined, withRedux);
 
 ReactDOM.hydrate(withHelmet, appDom);

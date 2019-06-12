@@ -126,7 +126,8 @@ class SignUpController extends Component<IProps, IState> {
     let submitButtonText = "Submit";
     const showFormErrors =
       (typeof pwValidated !== "undefined" && !pwValidated) ||
-      (typeof unameValidated !== "undefined" && !unameValidated);
+      (typeof unameValidated !== "undefined" && !unameValidated) ||
+      (!!email && !emailValidated);
     if (isLoading) {
       submitButtonText = "Submitting...";
     } else if (showFormErrors) {

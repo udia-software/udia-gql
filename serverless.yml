@@ -17,8 +17,8 @@ custom:
     prod: ''
     dev: 'http://localhost:8000'
   nodeEnv:
-    prod: "production"
-    dev: "development"
+    prod: production
+    dev: development
   minifyStage:
     prod: true
     dev: false

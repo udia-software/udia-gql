@@ -1,4 +1,4 @@
-import { combineReducers, createStore, Store, StoreEnhancer } from "redux";
+import { combineReducers } from "redux";
 import { DYNAMODB_STAGE } from "../constants";
 
 /* ==== SHARED ENVIRONMENT ====
@@ -23,7 +23,3 @@ export interface IRootState {
 export const rootReducer = combineReducers({
   environment: environmentReducer,
 });
-
-export default (initialState?: StoreEnhancer<{}, {}>): Store<{}> => {
-  return createStore(rootReducer, initialState);
-};
