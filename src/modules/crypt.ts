@@ -10,6 +10,11 @@ interface SerializableArray extends ReadonlyArray<Serializable> { }
 export type Serializable = Primative | Primative[] | SerializableArray;
 
 export default class Crypt {
+  public static async generateNonce() {
+    const nonceBuffer = Buffer.from(randomBytes(secretbox.nonceLength));
+    return nonceBuffer.toString("base64");
+  }
+
   /**
    * Generate the three required keys for UDIA auth & crypto
    * @param uname Username of user
@@ -18,7 +23,7 @@ export default class Crypt {
    * @param cost Number of pbkdf2 iterations
    */
   public static async deriveMasterKeys(uname: string, uip: string, nonce: string, cost: number) {
-    const luname = uname.normalize("NFKC").toLowerCase().trim();
+    const luname = uname.normalize("NFKC").trim().toLowerCase();
 
     // Compute Salt
     const preSaltString = [luname, Crypt.NAME, Crypt.VERSION, cost, nonce].join(":");

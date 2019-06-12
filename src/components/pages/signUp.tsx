@@ -1,3 +1,5 @@
+import ApolloClient from "apollo-client";
+import gql from "graphql-tag";
 import React, {
   ChangeEventHandler,
   Component,
@@ -7,9 +9,15 @@ import React, {
   MouseEventHandler,
   RefObject
 } from "react";
+import { withApollo } from "react-apollo";
 import { Helmet } from "react-helmet-async";
-import { connect } from "react-redux";
-import { IErrorMessage, isUsernameValid, isEmailValid } from "../../modules/validators";
+import { ICryptoKey } from "../../graphql/schema";
+import Crypt from "../../modules/crypt";
+import {
+  IErrorMessage,
+  isEmailValid,
+  isUsernameValid
+} from "../../modules/validators";
 import { EmailFormField } from "../composite/emailFormField";
 import { PasswordFormField } from "../composite/passwordFormField";
 import { UsernameFormField } from "../composite/usernameFormField";
@@ -30,15 +38,13 @@ interface IState {
   username: string;
   email: string;
   password: string;
+  focusedElement: string;
   isLoading: boolean;
-  isFocusUsername: boolean;
   unameLengthOK: boolean;
   unameSpaceOK: boolean;
   unameValidated?: boolean;
-  isFocusEmail: boolean;
   emailAppearsOK: boolean;
   emailValidated?: boolean;
-  isFocusPassword: boolean;
   pwLengthOK: boolean;
   pwLowerOK: boolean;
   pwUpperOK: boolean;
@@ -51,24 +57,26 @@ interface IState {
   errorMessage: string;
 }
 
-class SignUpController extends Component<{}, IState> {
+interface IProps {
+  client: ApolloClient<{}>;
+}
+
+class SignUpController extends Component<IProps, IState> {
   private TIP_TIMEOUT_MS = 200;
   private usernameInputRef: RefObject<HTMLInputElement>;
   private passwordInputRef: RefObject<HTMLInputElement>;
 
-  constructor(props: {}) {
+  constructor(props: IProps) {
     super(props);
     this.state = {
       username: "",
       email: "",
       password: "",
+      focusedElement: "",
       isLoading: false,
-      isFocusUsername: false,
       unameLengthOK: false,
       unameSpaceOK: false,
-      isFocusEmail: false,
       emailAppearsOK: false,
-      isFocusPassword: false,
       pwLengthOK: false,
       pwLowerOK: false,
       pwUpperOK: false,
@@ -88,15 +96,13 @@ class SignUpController extends Component<{}, IState> {
       username,
       email,
       password,
+      focusedElement,
       isLoading,
-      isFocusUsername,
       unameLengthOK,
       unameSpaceOK,
       unameValidated,
-      isFocusEmail,
       emailAppearsOK,
       emailValidated,
-      isFocusPassword,
       pwLengthOK,
       pwLowerOK,
       pwUpperOK,
@@ -145,7 +151,7 @@ class SignUpController extends Component<{}, IState> {
               username={username}
               isLoading={isLoading}
               usernameInputRef={this.usernameInputRef}
-              isFocusUsername={isFocusUsername}
+              isFocusUsername={focusedElement === "username"}
               tipTimeout={this.TIP_TIMEOUT_MS}
               unameLengthOK={unameLengthOK}
               unameSpaceOK={unameSpaceOK}
@@ -157,7 +163,7 @@ class SignUpController extends Component<{}, IState> {
               handleInputBlur={this.handleInputBlur}
               email={email}
               isLoading={isLoading}
-              isFocusEmail={isFocusEmail}
+              isFocusEmail={focusedElement === "email"}
               tipTimeout={this.TIP_TIMEOUT_MS}
               emailAppearsOK={emailAppearsOK}
             />
@@ -171,7 +177,7 @@ class SignUpController extends Component<{}, IState> {
               password={password}
               isLoading={isLoading}
               passwordInputRef={this.passwordInputRef}
-              isFocusPassword={isFocusPassword}
+              isFocusPassword={focusedElement === "password"}
               tipTimeout={this.TIP_TIMEOUT_MS}
               pwLengthOK={pwLengthOK}
               pwLowerOK={pwLowerOK}
@@ -230,30 +236,24 @@ class SignUpController extends Component<{}, IState> {
 
   protected handleInputFocus: FocusEventHandler<HTMLInputElement> = e => {
     const focusedElement = e.currentTarget.name;
-    if (focusedElement === "username") {
-      this.setState(() => ({ isFocusUsername: true }));
-    } else if (focusedElement === "email") {
-      this.setState(() => ({ isFocusEmail: true }));
-    } else if (focusedElement === "password") {
-      this.setState(() => ({ isFocusPassword: true }));
-    }
+    this.setState(() => ({ focusedElement }));
   };
 
   protected handleInputBlur: FocusEventHandler<HTMLInputElement> = e => {
     const focusedElement = e.currentTarget.name;
     if (focusedElement === "username") {
       this.setState(({ unameLengthOK, unameSpaceOK }) => ({
-        isFocusUsername: false,
+        focusedElement: "",
         unameValidated: unameLengthOK && unameSpaceOK
       }));
     } else if (focusedElement === "email") {
       this.setState(({ emailAppearsOK }) => ({
-        isFocusEmail: false,
+        focusedElement: "",
         emailValidated: emailAppearsOK
       }));
     } else if (focusedElement === "password") {
       this.setState(({ pwLengthOK }) => ({
-        isFocusPassword: false,
+        focusedElement: "",
         pwValidated: pwLengthOK
       }));
     }
@@ -272,7 +272,94 @@ class SignUpController extends Component<{}, IState> {
 
   protected handleSubmit: FormEventHandler<HTMLFormElement> = async e => {
     e.preventDefault();
-    return;
+    const { client } = this.props;
+    const { username, email, password } = this.state;
+    const isValid =
+      this.validateUsername(username) &&
+      this.validateEmail(email) &&
+      this.validatePassword(password);
+    if (!isValid) {
+      return;
+    }
+
+    this.setState(() => ({ isLoading: true }));
+
+    const nonce = await Crypt.generateNonce();
+    const pwCost = 100000;
+    const pwFunc = "pbkdf2";
+    const { pw, ek } = await Crypt.deriveMasterKeys(
+      username,
+      password,
+      nonce,
+      pwCost
+    );
+    const { publicSignKey, secretSignKey } = Crypt.generateSigningKeyPair();
+    const { publicEncKey, secretEncKey } = Crypt.generateEncryptionKeyPair();
+    const encSecretSignKey = Crypt.symmetricEncrypt(secretSignKey, ek);
+    const encSecretEncKey = Crypt.symmetricEncrypt(secretEncKey, ek);
+
+    const signKeyPayload: ICryptoKey = {
+      publicKey: publicSignKey,
+      encKeyPayload: encSecretSignKey
+    };
+    const encryptKeyPayload: ICryptoKey = {
+      publicKey: publicEncKey,
+      encKeyPayload: encSecretEncKey
+    };
+
+    try {
+      const output = await client.mutate({
+        mutation: gql`
+          mutation CreateUser($data: CreateUserInput!) {
+            createUser(data: $data) {
+              jwt
+              user {
+                uuid
+                createdAt
+              }
+            }
+          }
+        `,
+        variables: {
+          data: {
+            username,
+            email: email || undefined,
+            pwh: pw,
+            pwFunc,
+            pwFuncOptions: {
+              cost: pwCost,
+              nonce
+            },
+            signKeyPayload,
+            encryptKeyPayload
+          }
+        }
+      });
+      // tslint:disable-next-line: no-console
+      console.log(output.data.createUser);
+
+    } catch (err) {
+      if (err.graphQLErrors && err.graphQLErrors[0].extensions && err.graphQLErrors[0].extensions.exception) {
+        const { message, key } = err.graphQLErrors[0].extensions.exception[0];
+        this.setState(() => ({
+          hasError: true,
+          focusedElement: key,
+          unameValidated: key !== "username",
+          emailValidated: key !== "email",
+          errorMessage: message
+        }));
+      } else if (err.networkError) {
+        this.setState(() => ({
+          errorMessage: err.networkError
+        }));
+      } else {
+        this.setState(() => ({
+          errorMessage: err.message
+        }));
+      }
+    } finally {
+      this.setState(() => ({ isLoading: false }));
+    }
   };
 
   /**
@@ -297,11 +384,13 @@ class SignUpController extends Component<{}, IState> {
         }
       }
     }
+    const unameValidated = unameLengthOK && unameSpaceOK;
     this.setState(() => ({
       unameLengthOK,
       unameSpaceOK,
-      unameValidated: unameLengthOK && unameSpaceOK
+      unameValidated
     }));
+    return unameValidated;
   };
 
   /**
@@ -317,11 +406,12 @@ class SignUpController extends Component<{}, IState> {
         }
       }
     }
-    this.setState(() =>({
+    this.setState(() => ({
       emailAppearsOK,
       emailValidated: emailAppearsOK
-    }))
-  }
+    }));
+    return emailInput ? emailAppearsOK : true;
+  };
 
   /**
    * Quick client side validation of the password
@@ -332,29 +422,24 @@ class SignUpController extends Component<{}, IState> {
    * - number exists
    */
   private validatePassword = (passwordInput: string) => {
-    this.setState(() => {
-      const pwLengthOK = !!passwordInput && passwordInput.length > 7;
-      const pwLowerOK =
-        !!passwordInput && passwordInput.toUpperCase() !== passwordInput;
-      const pwUpperOK =
-        !!passwordInput && passwordInput.toLowerCase() !== passwordInput;
-      const pwNumberOK = !!passwordInput && /[0-9]+/.test(passwordInput);
-      const pwSpecialOK =
-        !!passwordInput && !/^[a-zA-Z0-9]+$/.test(passwordInput);
-      return {
-        pwLengthOK,
-        pwLowerOK,
-        pwUpperOK,
-        pwNumberOK,
-        pwSpecialOK,
-        pwValidated: pwLengthOK // only length mandatory
-      };
-    });
+    const pwLengthOK = !!passwordInput && passwordInput.length > 7;
+    const pwLowerOK =
+      !!passwordInput && passwordInput.toUpperCase() !== passwordInput;
+    const pwUpperOK =
+      !!passwordInput && passwordInput.toLowerCase() !== passwordInput;
+    const pwNumberOK = !!passwordInput && /[0-9]+/.test(passwordInput);
+    const pwSpecialOK =
+      !!passwordInput && !/^[a-zA-Z0-9]+$/.test(passwordInput);
+    this.setState(() => ({
+      pwLengthOK,
+      pwLowerOK,
+      pwUpperOK,
+      pwNumberOK,
+      pwSpecialOK,
+      pwValidated: pwLengthOK // only length mandatory
+    }));
+    return pwLengthOK;
   };
 }
 
-const mapStateToProps = () => ({});
-
-const SignUp = connect(mapStateToProps)(SignUpController);
-
-export { SignUp };
+export const SignUp = withApollo(SignUpController);

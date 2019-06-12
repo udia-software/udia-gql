@@ -310,7 +310,7 @@ class LogInController extends Component<IProp, IState> {
       if (err.graphQLErrors) {
         this.setState(() => ({
           hasError: true,
-          errorMessage: err.graphQLErrors[0].message
+          errorMessage: err.graphQLErrors[0].extensions.exception[0].message
         }));
       }
     } finally {
