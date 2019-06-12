@@ -4,7 +4,7 @@ import { USERS_TABLE, USERS_UUID_NS } from "../../constants";
 import { resolvers } from "../../graphql/resolvers";
 import { ICreateUserInput } from "../../graphql/schema";
 import UserManager from "../../managers/userManager";
-import { client } from "../../modules/dbClient";
+import { docDbClient } from "../../modules/dbClient";
 
 describe("graphql/resolvers.ts", () => {
   describe("Query", () => {
@@ -25,11 +25,11 @@ describe("graphql/resolvers.ts", () => {
     };
 
     beforeAll(() => new Promise((resolve, reject) =>
-      client.put({ TableName: USERS_TABLE, Item: params },
+      docDbClient.put({ TableName: USERS_TABLE, Item: params },
         (err, data) => { if (err) { reject(err); } else { resolve(data); } })
     ));
     afterAll(() => new Promise((resolve, reject) =>
-      client.delete({ TableName: USERS_TABLE, Key: { uuid, type: UserManager.TYPE_USERNAME } },
+      docDbClient.delete({ TableName: USERS_TABLE, Key: { uuid, type: UserManager.TYPE_USERNAME } },
         (err, data) => { if (err) { reject(err); } else { resolve(data); } })
     ));
 

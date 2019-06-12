@@ -1,4 +1,3 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, {
   ChangeEventHandler,
   Component,
@@ -10,31 +9,35 @@ import React, {
 } from "react";
 import { Helmet } from "react-helmet-async";
 import { connect } from "react-redux";
-import { CSSTransition, TransitionGroup } from "react-transition-group";
+import { IErrorMessage, isUsernameValid, isEmailValid } from "../../modules/validators";
+import { EmailFormField } from "../composite/emailFormField";
+import { PasswordFormField } from "../composite/passwordFormField";
+import { UsernameFormField } from "../composite/usernameFormField";
 import { Checkbox } from "../static/checkbox";
 import {
-  CenteredListItem,
   Form,
   FormField,
   FormFieldset,
-  FormInput,
   FormLabel,
   FormLabelContent,
   FormLegend,
   FormOutput,
-  SubmitButton,
-  UnstyledList
+  SubmitButton
 } from "../static/formHelpers";
-import { A, Center, GreenIcon, H1, Link, RedIcon } from "../static/themedHelpers";
+import { Center, H1, Link } from "../static/themedHelpers";
 
 interface IState {
   username: string;
+  email: string;
   password: string;
   isLoading: boolean;
   isFocusUsername: boolean;
   unameLengthOK: boolean;
   unameSpaceOK: boolean;
   unameValidated?: boolean;
+  isFocusEmail: boolean;
+  emailAppearsOK: boolean;
+  emailValidated?: boolean;
   isFocusPassword: boolean;
   pwLengthOK: boolean;
   pwLowerOK: boolean;
@@ -57,11 +60,14 @@ class SignUpController extends Component<{}, IState> {
     super(props);
     this.state = {
       username: "",
+      email: "",
       password: "",
       isLoading: false,
       isFocusUsername: false,
       unameLengthOK: false,
       unameSpaceOK: false,
+      isFocusEmail: false,
+      emailAppearsOK: false,
       isFocusPassword: false,
       pwLengthOK: false,
       pwLowerOK: false,
@@ -80,12 +86,16 @@ class SignUpController extends Component<{}, IState> {
   public render() {
     const {
       username,
+      email,
       password,
       isLoading,
       isFocusUsername,
       unameLengthOK,
       unameSpaceOK,
       unameValidated,
+      isFocusEmail,
+      emailAppearsOK,
+      emailValidated,
       isFocusPassword,
       pwLengthOK,
       pwLowerOK,
@@ -116,6 +126,7 @@ class SignUpController extends Component<{}, IState> {
     } else if (showFormErrors) {
       submitButtonText = "Check Errors";
     }
+
     return (
       <Center>
         <Helmet>
@@ -126,165 +137,48 @@ class SignUpController extends Component<{}, IState> {
         <Form autoComplete="off" method="post" onSubmit={this.handleSubmit}>
           <FormFieldset>
             <FormLegend>Hello there, User.</FormLegend>
-            <FormField>
-              <FormLabel>
-                <FormLabelContent>
-                  <span>
-                    Username{" "}
-                    {typeof unameValidated !== "undefined" &&
-                      (unameValidated ? (
-                        <GreenIcon icon="check" />
-                      ) : (
-                          <RedIcon icon="times" />
-                        ))}
-                  </span>
-                </FormLabelContent>
-                <FormInput
-                  autoComplete="off"
-                  type="text"
-                  name="username"
-                  onChange={this.handleInputChange}
-                  onFocus={this.handleInputFocus}
-                  onBlur={this.handleInputBlur}
-                  value={username}
-                  disabled={isLoading}
-                  ref={this.usernameInputRef}
-                />
-                <TransitionGroup>
-                  {(isFocusUsername ||
-                    (typeof unameValidated !== "undefined" &&
-                      !unameValidated)) && (
-                      <CSSTransition
-                        classNames="fade"
-                        timeout={this.TIP_TIMEOUT_MS}
-                        unmountOnExit={true}
-                      >
-                        <FormOutput>
-                          <UnstyledList>
-                            <CenteredListItem>
-                              <code>2 &lt; len(uname) &lt; 21</code>
-                              {unameLengthOK ? (
-                                <GreenIcon icon="check" />
-                              ) : (
-                                  <RedIcon icon="times" />
-                                )}
-                            </CenteredListItem>
-                            <CenteredListItem>
-                              <code>space not in uname</code>
-                              {unameSpaceOK ? (
-                                <GreenIcon icon="check" />
-                              ) : (
-                                  <RedIcon icon="times" />
-                                )}
-                            </CenteredListItem>
-                          </UnstyledList>
-                        </FormOutput>
-                      </CSSTransition>
-                    )}
-                </TransitionGroup>
-              </FormLabel>
-            </FormField>
-            <FormField>
-              <FormLabel>
-                <FormLabelContent>
-                  <span>
-                    Password{" "}
-                    {typeof pwValidated !== "undefined" &&
-                      (pwValidated ? (
-                        <GreenIcon icon="check" />
-                      ) : (
-                          <RedIcon icon="times" />
-                        ))}
-                  </span>
-                  {showPassword ? (
-                    <A
-                      style={{ userSelect: "none" }}
-                      onClick={this.toggleShowPassword}
-                    >
-                      Hide{" "}
-                      <FontAwesomeIcon
-                        style={{ height: "0.8em" }}
-                        icon="eye-slash"
-                      />
-                    </A>
-                  ) : (
-                      <A
-                        style={{ userSelect: "none" }}
-                        onClick={this.toggleShowPassword}
-                      >
-                        Show{" "}
-                        <FontAwesomeIcon style={{ height: "0.8em" }} icon="eye" />
-                      </A>
-                    )}
-                </FormLabelContent>
-                <FormInput
-                  autoComplete="off"
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  onChange={this.handleInputChange}
-                  onFocus={this.handleInputFocus}
-                  onBlur={this.handleInputBlur}
-                  value={password}
-                  disabled={isLoading}
-                  ref={this.passwordInputRef}
-                />
-                <TransitionGroup>
-                  {(isFocusPassword ||
-                    (typeof pwValidated !== "undefined" && !pwValidated)) && (
-                      <CSSTransition
-                        classNames="fade"
-                        timeout={this.TIP_TIMEOUT_MS}
-                        unmountOnExit={true}
-                      >
-                        <FormOutput>
-                          <UnstyledList>
-                            <CenteredListItem>
-                              <code>len(pw) &gt; 7</code>
-                              {pwLengthOK ? (
-                                <GreenIcon icon="check" />
-                              ) : (
-                                  <RedIcon icon="times" />
-                                )}
-                            </CenteredListItem>
-                            <CenteredListItem>
-                              <code>lowercase in pw</code>
-                              {pwLowerOK ? (
-                                <GreenIcon icon="check" />
-                              ) : (
-                                  <RedIcon icon="times" />
-                                )}
-                            </CenteredListItem>
-                            <CenteredListItem>
-                              <code>uppercase in pw</code>
-                              {pwUpperOK ? (
-                                <GreenIcon icon="check" />
-                              ) : (
-                                  <RedIcon icon="times" />
-                                )}
-                            </CenteredListItem>
-                            <CenteredListItem>
-                              <code>number in pw</code>
-                              {pwNumberOK ? (
-                                <GreenIcon icon="check" />
-                              ) : (
-                                  <RedIcon icon="times" />
-                                )}
-                            </CenteredListItem>
-                            <CenteredListItem>
-                              <code>special in pw</code>
-                              {pwSpecialOK ? (
-                                <GreenIcon icon="check" />
-                              ) : (
-                                  <RedIcon icon="times" />
-                                )}
-                            </CenteredListItem>
-                          </UnstyledList>
-                        </FormOutput>
-                      </CSSTransition>
-                    )}
-                </TransitionGroup>
-              </FormLabel>
-            </FormField>
+            <UsernameFormField
+              unameValidated={unameValidated}
+              handleInputChange={this.handleInputChange}
+              handleInputFocus={this.handleInputFocus}
+              handleInputBlur={this.handleInputBlur}
+              username={username}
+              isLoading={isLoading}
+              usernameInputRef={this.usernameInputRef}
+              isFocusUsername={isFocusUsername}
+              tipTimeout={this.TIP_TIMEOUT_MS}
+              unameLengthOK={unameLengthOK}
+              unameSpaceOK={unameSpaceOK}
+            />
+            <EmailFormField
+              emailValidated={emailValidated}
+              handleInputChange={this.handleInputChange}
+              handleInputFocus={this.handleInputFocus}
+              handleInputBlur={this.handleInputBlur}
+              email={email}
+              isLoading={isLoading}
+              isFocusEmail={isFocusEmail}
+              tipTimeout={this.TIP_TIMEOUT_MS}
+              emailAppearsOK={emailAppearsOK}
+            />
+            <PasswordFormField
+              pwValidated={pwValidated}
+              showPassword={showPassword}
+              toggleShowPassword={this.toggleShowPassword}
+              handleInputChange={this.handleInputChange}
+              handleInputFocus={this.handleInputFocus}
+              handleInputBlur={this.handleInputBlur}
+              password={password}
+              isLoading={isLoading}
+              passwordInputRef={this.passwordInputRef}
+              isFocusPassword={isFocusPassword}
+              tipTimeout={this.TIP_TIMEOUT_MS}
+              pwLengthOK={pwLengthOK}
+              pwLowerOK={pwLowerOK}
+              pwUpperOK={pwUpperOK}
+              pwNumberOK={pwNumberOK}
+              pwSpecialOK={pwSpecialOK}
+            />
             <FormField>
               <FormLabel style={{ cursor: "pointer" }}>
                 <FormLabelContent>
@@ -313,13 +207,20 @@ class SignUpController extends Component<{}, IState> {
   protected handleInputChange: ChangeEventHandler<HTMLInputElement> = e => {
     const stateDiff = { [e.currentTarget.name]: e.currentTarget.value };
     const checkDiff = { [e.currentTarget.name]: e.currentTarget.checked };
-    if ("password" in stateDiff) {
-      this.validatePassword(stateDiff.password);
-      this.setState(() => ({ password: stateDiff.password }));
-    }
     if ("username" in stateDiff) {
-      this.validateUsername(stateDiff.username);
-      this.setState(() => ({ username: stateDiff.username }));
+      const username = stateDiff.username.normalize("NFKC");
+      this.validateUsername(username);
+      this.setState(() => ({ username }));
+    }
+    if ("email" in stateDiff) {
+      const email = stateDiff.email.normalize("NFKC");
+      this.validateEmail(email);
+      this.setState(() => ({ email }));
+    }
+    if ("password" in stateDiff) {
+      const password = stateDiff.password.normalize("NFKC");
+      this.validatePassword(password);
+      this.setState(() => ({ password }));
     }
     if ("remember" in checkDiff) {
       this.setState(() => ({ rememberUser: checkDiff.remember }));
@@ -331,6 +232,8 @@ class SignUpController extends Component<{}, IState> {
     const focusedElement = e.currentTarget.name;
     if (focusedElement === "username") {
       this.setState(() => ({ isFocusUsername: true }));
+    } else if (focusedElement === "email") {
+      this.setState(() => ({ isFocusEmail: true }));
     } else if (focusedElement === "password") {
       this.setState(() => ({ isFocusPassword: true }));
     }
@@ -339,22 +242,20 @@ class SignUpController extends Component<{}, IState> {
   protected handleInputBlur: FocusEventHandler<HTMLInputElement> = e => {
     const focusedElement = e.currentTarget.name;
     if (focusedElement === "username") {
-      this.setState(({ unameLengthOK, unameSpaceOK }) => {
-        return {
-          isFocusUsername: false,
-          unameValidated: unameLengthOK && unameSpaceOK
-        };
-      });
+      this.setState(({ unameLengthOK, unameSpaceOK }) => ({
+        isFocusUsername: false,
+        unameValidated: unameLengthOK && unameSpaceOK
+      }));
+    } else if (focusedElement === "email") {
+      this.setState(({ emailAppearsOK }) => ({
+        isFocusEmail: false,
+        emailValidated: emailAppearsOK
+      }));
     } else if (focusedElement === "password") {
-      this.setState(
-        ({ pwLengthOK, pwLowerOK, pwNumberOK, pwSpecialOK, pwUpperOK }) => {
-          return {
-            isFocusPassword: false,
-            pwValidated:
-              pwLengthOK && pwLowerOK && pwNumberOK && pwSpecialOK && pwUpperOK
-          };
-        }
-      );
+      this.setState(({ pwLengthOK }) => ({
+        isFocusPassword: false,
+        pwValidated: pwLengthOK
+      }));
     }
   };
 
@@ -376,23 +277,51 @@ class SignUpController extends Component<{}, IState> {
 
   /**
    * Quick client side validation of the username
-   * - length between 3 and 28
+   * - length between 3 and 24
    * - contains no whitespace characters
    */
   private validateUsername = (usernameInput: string) => {
-    this.setState(() => {
-      const unameLengthOK =
-        !!usernameInput &&
-        usernameInput.length >= 3 &&
-        usernameInput.length <= 20;
-      const unameSpaceOK = !!usernameInput && !/\s/giu.test(usernameInput);
-      return {
-        unameLengthOK,
-        unameSpaceOK,
-        unameValidated: unameLengthOK && unameSpaceOK
-      };
-    });
+    const errors: IErrorMessage[] = [];
+    let unameLengthOK = true;
+    let unameSpaceOK = true;
+
+    if (!isUsernameValid(usernameInput, errors)) {
+      for (const { message } of errors) {
+        if (
+          message.indexOf("is too long") >= 0 ||
+          message.indexOf("is too short") >= 0
+        ) {
+          unameLengthOK = false;
+        } else if (message.indexOf("should not contain whitespace") >= 0) {
+          unameSpaceOK = false;
+        }
+      }
+    }
+    this.setState(() => ({
+      unameLengthOK,
+      unameSpaceOK,
+      unameValidated: unameLengthOK && unameSpaceOK
+    }));
   };
+
+  /**
+   * Quick client check of the email
+   */
+  private validateEmail = (emailInput: string) => {
+    const errors: IErrorMessage[] = [];
+    let emailAppearsOK = true;
+    if (!isEmailValid(emailInput, errors)) {
+      for (const { message } of errors) {
+        if (message.indexOf("syntactically invalid") >= 0) {
+          emailAppearsOK = false;
+        }
+      }
+    }
+    this.setState(() =>({
+      emailAppearsOK,
+      emailValidated: emailAppearsOK
+    }))
+  }
 
   /**
    * Quick client side validation of the password
@@ -404,7 +333,7 @@ class SignUpController extends Component<{}, IState> {
    */
   private validatePassword = (passwordInput: string) => {
     this.setState(() => {
-      const pwLengthOK = !!passwordInput && passwordInput.length >= 8;
+      const pwLengthOK = !!passwordInput && passwordInput.length > 7;
       const pwLowerOK =
         !!passwordInput && passwordInput.toUpperCase() !== passwordInput;
       const pwUpperOK =
@@ -412,15 +341,13 @@ class SignUpController extends Component<{}, IState> {
       const pwNumberOK = !!passwordInput && /[0-9]+/.test(passwordInput);
       const pwSpecialOK =
         !!passwordInput && !/^[a-zA-Z0-9]+$/.test(passwordInput);
-      const pwValidated =
-        pwLengthOK && pwLowerOK && pwUpperOK && pwNumberOK && pwSpecialOK;
       return {
         pwLengthOK,
         pwLowerOK,
         pwUpperOK,
         pwNumberOK,
         pwSpecialOK,
-        pwValidated
+        pwValidated: pwLengthOK // only length mandatory
       };
     });
   };

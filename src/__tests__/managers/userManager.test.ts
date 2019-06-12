@@ -3,7 +3,7 @@ import uuidv5 from "uuid/v5";
 import { USERS_TABLE, USERS_UUID_NS } from "../../constants";
 import { ICreateUserInput } from "../../graphql/schema";
 import UserManager from "../../managers/userManager";
-import { client } from "../../modules/dbClient";
+import { docDbClient } from "../../modules/dbClient";
 
 describe("managers/userManager.ts", () => {
   describe("createUser", () => {
@@ -29,7 +29,7 @@ describe("managers/userManager.ts", () => {
       }
     };
     const dbRemoveUser = () => new Promise((resolve, reject) =>
-      client.batchWrite(
+      docDbClient.batchWrite(
         {
           RequestItems: {
             [USERS_TABLE]: [
@@ -91,11 +91,11 @@ describe("managers/userManager.ts", () => {
     };
 
     beforeAll(() => new Promise((resolve, reject) =>
-      client.put({ TableName: USERS_TABLE, Item: params },
+      docDbClient.put({ TableName: USERS_TABLE, Item: params },
         (err, data) => { if (err) { reject(err); } else { resolve(data); } })
     ));
     afterAll(() => new Promise((resolve, reject) =>
-      client.delete({ TableName: USERS_TABLE, Key: { uuid, type: UserManager.TYPE_USERNAME } },
+      docDbClient.delete({ TableName: USERS_TABLE, Key: { uuid, type: UserManager.TYPE_USERNAME } },
         (err, data) => { if (err) { reject(err); } else { resolve(data); } })
     ));
 

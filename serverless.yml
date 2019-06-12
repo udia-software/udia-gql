@@ -22,9 +22,13 @@ custom:
   minifyStage:
     prod: true
     dev: false
+  contentHash:
+    prod: true
+    dev: false
   parcel:
     options:
       minify: ${self:custom.minifyStage.${self:provider.stage}}
+      contentHash: ${self:custom.contentHash.${self:provider.stage}}
       watch: true
     entries:
       - file: src/public/index.html

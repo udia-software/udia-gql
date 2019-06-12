@@ -1,28 +1,16 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import ApolloClient from "apollo-client";
+import gql from "graphql-tag";
 import React, {
-  ChangeEventHandler,
-  Component,
-  createRef,
-  FocusEventHandler,
-  FormEventHandler,
-  MouseEventHandler,
-  RefObject
+  ChangeEventHandler, Component, createRef, FocusEventHandler, FormEventHandler, MouseEventHandler, RefObject
 } from "react";
+import { withApollo } from "react-apollo";
 import { Helmet } from "react-helmet-async";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
 import { Checkbox } from "../static/checkbox";
 import {
-  CenteredListItem,
-  Form,
-  FormField,
-  FormFieldset,
-  FormInput,
-  FormLabel,
-  FormLabelContent,
-  FormLegend,
-  FormOutput,
-  SubmitButton,
-  UnstyledList
+  CenteredListItem, Form, FormField, FormFieldset, FormInput, FormLabel, FormLabelContent, FormLegend,
+  FormOutput, SubmitButton, UnstyledList
 } from "../static/formHelpers";
 import { A, Center, GreenIcon, H1, Link, RedIcon } from "../static/themedHelpers";
 
@@ -40,12 +28,16 @@ interface IState {
   errorMessage: string;
 }
 
-class LogInController extends Component<{}, IState> {
+interface IProp {
+  client: ApolloClient<{}>;
+}
+
+class LogInController extends Component<IProp, IState> {
   private TIP_TIMEOUT_MS = 200;
   private usernameInputRef: RefObject<HTMLInputElement>;
   private passwordInputRef: RefObject<HTMLInputElement>;
 
-  constructor(props: {}) {
+  constructor(props: IProp) {
     super(props);
     this.state = {
       username: "",
@@ -77,13 +69,6 @@ class LogInController extends Component<{}, IState> {
       errorMessage
     } = this.state;
 
-    // if (this.props.user && !isLoading) {
-    //   if (!this.isRedirecting) {
-    //     this.isRedirecting = true;
-    //     return <Redirect to="/" />;
-    //   }
-    // }
-
     let submitButtonText = "Submit";
     const showFormErrors =
       (typeof unameExists !== "undefined" && !unameExists) ||
@@ -101,7 +86,7 @@ class LogInController extends Component<{}, IState> {
           <meta name="description" content="Log into your account, User." />
         </Helmet>
         <H1>Log In</H1>
-        <Form autoComplete="off" method="post" onSubmit={this.handleSubmit}>
+        <Form autoComplete="off" method="POST" onSubmit={this.handleSubmit}>
           <FormFieldset>
             <FormLegend>Welcome back, User.</FormLegend>
             <FormField>
@@ -246,13 +231,13 @@ class LogInController extends Component<{}, IState> {
     const checkDiff = { [e.currentTarget.name]: e.currentTarget.checked };
     if ("password" in stateDiff) {
       this.setState(() => ({
-        password: stateDiff.password,
+        password: stateDiff.password.normalize("NFKC"),
         pwExists: !!stateDiff.password
       }));
     }
     if ("username" in stateDiff) {
       this.setState(() => ({
-        username: stateDiff.username,
+        username: stateDiff.username.normalize("NFKC"),
         unameExists: !!stateDiff.username
       }));
     }
@@ -299,7 +284,39 @@ class LogInController extends Component<{}, IState> {
 
   protected handleSubmit: FormEventHandler<HTMLFormElement> = async e => {
     e.preventDefault();
+    const { client } = this.props;
+    const { username } = this.state;
+    this.setState(() => ({ isLoading: true }));
+    try {
+      const output = await client.query({
+        query: gql`query GetUserAuthParams($username: String!) {
+          getUserAuthParams(username: $username) {
+            pwFunc
+            pwFuncOptions {
+              nonce
+              cost
+            }
+          }
+        }`,
+        variables: {
+          username
+        }
+      });
+      // tslint:disable-next-line: no-console
+      console.log(output);
+    } catch (err) {
+      // tslint:disable-next-line: no-console
+      console.error(err);
+      if (err.graphQLErrors) {
+        this.setState(() => ({
+          hasError: true,
+          errorMessage: err.graphQLErrors[0].message
+        }));
+      }
+    } finally {
+      this.setState(() => ({ isLoading: false }));
+    }
   };
 }
 
-export { LogInController as LogIn };
+export const LogIn = withApollo(LogInController);

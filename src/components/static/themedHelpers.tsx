@@ -8,22 +8,40 @@ const LinkCSS = css`
   transition: color 0.1s ease-in;
   text-decoration: none;
   color: ${({ theme }) => theme.intermediateColor};
-  &:hover { color: ${({ theme }) => theme.primaryColor}; };
+  &:hover {
+    color: ${({ theme }) => theme.primaryColor};
+  }
 `;
-export const Link = styled(rrLink)`${LinkCSS}`;
-export const A = styled.a`${LinkCSS}`;
+export const Link = styled(rrLink)`
+  ${LinkCSS}
+`;
+export const A = styled.a`
+  ${LinkCSS}
+`;
 
 // Themed Headers
 const HeaderCSS = css`
   padding: 0;
   margin: 0 0 0.3em 0;
 `;
-export const H1 = styled.h1`${HeaderCSS}`;
-export const H2 = styled.h2`${HeaderCSS}`;
-export const H3 = styled.h3`${HeaderCSS}`;
-export const H4 = styled.h4`${HeaderCSS}`;
-export const H5 = styled.h5`${HeaderCSS}`;
-export const H6 = styled.h6`${HeaderCSS}`;
+export const H1 = styled.h1`
+  ${HeaderCSS}
+`;
+export const H2 = styled.h2`
+  ${HeaderCSS}
+`;
+export const H3 = styled.h3`
+  ${HeaderCSS}
+`;
+export const H4 = styled.h4`
+  ${HeaderCSS}
+`;
+export const H5 = styled.h5`
+  ${HeaderCSS}
+`;
+export const H6 = styled.h6`
+  ${HeaderCSS}
+`;
 
 // Centered Content
 export const Center = styled.div`
@@ -41,4 +59,7 @@ export const GreenIcon = styled(FontAwesomeIcon)`
 `;
 export const RedIcon = styled(FontAwesomeIcon)`
   color: ${({ theme }) => theme.red};
+`;
+export const YellowIcon = styled(FontAwesomeIcon)`
+  color: ${({ theme }) => theme.yellow};
 `;
