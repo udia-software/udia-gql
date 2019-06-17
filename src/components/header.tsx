@@ -54,23 +54,41 @@ const TNavLink = styled(ENavLink)`
   }
 `;
 
-const HeaderComp = (props: { nodeEnv: string }) => (
+interface IProps {
+  NODE_ENV: string;
+  userId?: string;
+  username?: string;
+}
+
+const HeaderComp = (props: IProps) => (
   <HeaderContainer>
     <TNavLink to="/">
       UDIA
-      {props.nodeEnv === "development" &&
-        <span style={{ fontSize: "xx-small" }}>-DEV</span>}
+      {props.NODE_ENV === "development" && (
+        <span style={{ fontSize: "xx-small" }}>-DEV</span>
+      )}
     </TNavLink>
-    <HeaderRightContainer>
-      {/* <ENavLink to="/about">About</ENavLink> */}
-      <ENavLink to="/sign-up">Sign Up</ENavLink>
-      <ENavLink to="/log-in">Log In</ENavLink>
-    </HeaderRightContainer>
+    {!props.userId && (
+      <HeaderRightContainer>
+        {/* <ENavLink to="/about">About</ENavLink> */}
+        <ENavLink to="/sign-up">Sign Up</ENavLink>
+        <ENavLink to="/log-in">Log In</ENavLink>
+      </HeaderRightContainer>
+    )}
+    {props.userId && (
+      <HeaderRightContainer>
+        <ENavLink to="/sign-out">
+          {!!props.username ? props.username : "Sign Out"}
+        </ENavLink>
+      </HeaderRightContainer>
+    )}
   </HeaderContainer>
 );
 
 const mapStateToProps = (state: IRootState) => ({
-  nodeEnv: state.environment.NODE_ENV
+  NODE_ENV: state.environment.NODE_ENV,
+  userId: state.userUniversal.userId,
+  username: state.userUniversal.username
 });
 
 const Header = connect(mapStateToProps)(HeaderComp);

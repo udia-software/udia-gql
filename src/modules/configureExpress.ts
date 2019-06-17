@@ -2,6 +2,7 @@ import express from "express";
 import { createReadStream } from "fs";
 import { join } from "path";
 import { createElement } from "react";
+import { getDataFromTree } from "react-apollo";
 import { Cookies, CookiesProvider } from "react-cookie";
 import { renderToNodeStream } from "react-dom/server";
 import { FilledContext, HelmetProvider } from "react-helmet-async";
@@ -15,6 +16,7 @@ import { ApplicationLayout } from "../components/layout";
 import { NODE_ENV } from "../constants";
 import Auth from "./auth";
 import { IRootState, rootReducer } from "./configureReduxStore";
+import UserManager from "../managers/userManager";
 
 const PUBLIC_PATH_DIR = join(__dirname, "..", "public");
 export const app = express();
@@ -41,7 +43,7 @@ app.use(
 );
 
 app.use(cookiesMiddleware());
-app.get("/*", (req, res) => {
+app.get("/*", async (req, res) => {
   res.type("html");
 
   // Initialize Empty Redux Store & State
@@ -54,8 +56,11 @@ app.get("/*", (req, res) => {
   if (jwt) {
     const { uuid } = Auth.verifyUserJWT(jwt);
     if (uuid) {
+      // get the username
+      const username = await UserManager.getUsername(uuid);
       // re-create the store with preloaded user data
       reduxState.userUniversal.userId = uuid;
+      reduxState.userUniversal.username = username;
       store = createStore(rootReducer, reduxState);
     } else {
       // invalid JWT supplied, clear it
@@ -67,7 +72,7 @@ app.get("/*", (req, res) => {
     }
   }
 
-  // TODO: address Helmet filled context empty on SSR no JS
+  // React Helmet SSR Context stub
   const helmetContext: FilledContext | {} = {};
 
   // Construct JSX (No shorthand)
@@ -88,6 +93,7 @@ app.get("/*", (req, res) => {
   // Server Side Rendering with Stylesheet and Node Stream
   const styleSheet = new ServerStyleSheet();
   const jsx = styleSheet.collectStyles(withHelmet);
+  await getDataFromTree(jsx); // Populate Helmet SSR Context stub
   const appStream = styleSheet.interleaveWithNodeStream(
     renderToNodeStream(jsx)
   );

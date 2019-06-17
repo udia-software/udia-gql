@@ -18,6 +18,7 @@ interface IProps {
   handleInputBlur: FocusEventHandler<HTMLInputElement>;
   email: string;
   isLoading: boolean;
+  emailInputRef: RefObject<HTMLInputElement>;
   isFocusEmail: boolean;
   tipTimeout: number;
   emailAppearsOK: boolean;
@@ -29,6 +30,7 @@ export const EmailFormField = ({
   handleInputBlur,
   email,
   isLoading,
+  emailInputRef,
   isFocusEmail,
   tipTimeout,
   emailAppearsOK
@@ -56,6 +58,7 @@ export const EmailFormField = ({
         onBlur={handleInputBlur}
         value={email}
         disabled={isLoading}
+        ref={emailInputRef}
       />
       <TransitionGroup>
         {(isFocusEmail ||

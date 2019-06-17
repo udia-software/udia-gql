@@ -230,6 +230,27 @@ export default class UserManager {
     ]);
   }
 
+  public static async getUsername(uuid: string): Promise<string|undefined> {
+    const getUsernameParams: DocumentClient.GetItemInput = {
+      TableName: USERS_TABLE,
+      Key: { uuid, type: this.TYPE_USERNAME },
+      ProjectionExpression: "payload"
+    }
+    const output = await new Promise<DocumentClient.GetItemOutput>(
+      (resolve, reject) => docDbClient.get(getUsernameParams, (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      })
+    );
+    if (output && output.Item) {
+      return output.Item.payload.username;
+    }
+    return undefined;
+  }
+
   private static async isEmailAvailable(
     email: string,
     errors: IErrorMessage[]

@@ -18,20 +18,31 @@ const environmentReducer = (state = SharedEnvironment) => ({
  * Set user id in redux store for universal identity tracking
  */
 export interface IUserUniversalData {
-  userId?: string | null;
+  userId?: string;
+  username?: string;
 }
 const UserUniversalData: IUserUniversalData = {};
 
 export const SET_USER_ID = "user/SET_USER_ID";
 export interface ISetUserIDAction {
   type: typeof SET_USER_ID;
-  payload: string | null;
+  payload?: string;
 }
 export const setUserId = (userid: string | null): ISetUserIDAction => ({
   type: SET_USER_ID,
-  payload: userid
+  payload: userid === null ? undefined : userid
 });
-export type IUserUniversalAction = ISetUserIDAction;
+
+export const SET_USER_NAME = "user/SET_USER_NAME";
+export interface ISetUserNameAction {
+  type: typeof SET_USER_NAME;
+  payload?: string;
+}
+export const setUserName = (username: string | null): ISetUserNameAction => ({
+  type: SET_USER_NAME,
+  payload: username === null ? undefined : username
+});
+export type IUserUniversalAction = ISetUserIDAction | ISetUserNameAction;
 
 const userUniversalReducer = (
   state = UserUniversalData,
@@ -42,6 +53,11 @@ const userUniversalReducer = (
       return {
         ...state,
         userId: action.payload
+      };
+    case SET_USER_NAME:
+      return {
+        ...state,
+        username: action.payload
       };
     default:
       return { ...state };

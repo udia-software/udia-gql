@@ -13,8 +13,16 @@ import { withApollo } from "react-apollo";
 import { Cookies, withCookies } from "react-cookie";
 import { Helmet } from "react-helmet-async";
 import { connect } from "react-redux";
+import { Redirect } from "react-router";
+import { Dispatch } from "redux";
 import { ICryptoKey } from "../../graphql/schema";
-import { IRootState } from "../../modules/configureReduxStore";
+import {
+  IRootState,
+  ISetUserIDAction,
+  ISetUserNameAction,
+  setUserId,
+  setUserName
+} from "../../modules/configureReduxStore";
 import Crypt from "../../modules/crypt";
 import {
   IErrorMessage,
@@ -64,12 +72,17 @@ interface IProps {
   client: ApolloClient<{}>;
   cookies: Cookies;
   NODE_ENV: string;
+  userId?: string;
+  login: (userId: string) => ISetUserIDAction;
+  setName: (username: string) => ISetUserNameAction;
 }
 
 class SignUpController extends Component<IProps, IState> {
   private TIP_TIMEOUT_MS = 200;
   private usernameInputRef: RefObject<HTMLInputElement>;
   private passwordInputRef: RefObject<HTMLInputElement>;
+  private emailInputRef: RefObject<HTMLInputElement>;
+  private isRedirecting: boolean;
 
   constructor(props: IProps) {
     super(props);
@@ -93,7 +106,9 @@ class SignUpController extends Component<IProps, IState> {
       errorMessage: ""
     };
     this.usernameInputRef = createRef();
+    this.emailInputRef = createRef();
     this.passwordInputRef = createRef();
+    this.isRedirecting = false;
   }
 
   public render() {
@@ -121,12 +136,12 @@ class SignUpController extends Component<IProps, IState> {
     } = this.state;
 
     // if the user is logged in, redirect to the home page.
-    // if (this.props.user && !isLoading) {
-    //   if (!this.isRedirecting) {
-    //     this.isRedirecting = true;
-    //     return <Redirect to="/" />;
-    //   }
-    // }
+    if (this.props.userId && !isLoading) {
+      if (!this.isRedirecting) {
+        this.isRedirecting = true;
+        return <Redirect to="/" />;
+      }
+    }
 
     let submitButtonText = "Submit";
     const showFormErrors =
@@ -169,6 +184,7 @@ class SignUpController extends Component<IProps, IState> {
               handleInputBlur={this.handleInputBlur}
               email={email}
               isLoading={isLoading}
+              emailInputRef={this.emailInputRef}
               isFocusEmail={focusedElement === "email"}
               tipTimeout={this.TIP_TIMEOUT_MS}
               emailAppearsOK={emailAppearsOK}
@@ -321,7 +337,7 @@ class SignUpController extends Component<IProps, IState> {
               jwt
               user {
                 uuid
-                createdAt
+                username
               }
             }
           }
@@ -341,14 +357,15 @@ class SignUpController extends Component<IProps, IState> {
           }
         }
       });
-      // tslint:disable-next-line: no-console
-      console.log(output.data.createUser);
-      const { cookies, NODE_ENV } = this.props;
+      const { cookies, NODE_ENV, setName, login } = this.props;
       cookies.set("jwt", output.data.createUser.jwt, {
         path: "/",
         secure: NODE_ENV === "production",
         sameSite: true
       });
+      setName(output.data.createUser.user.username);
+      this.setState(() => ({ isLoading: false }));
+      login(output.data.createUser.user.uuid);
     } catch (err) {
       if (
         err.graphQLErrors &&
@@ -356,6 +373,27 @@ class SignUpController extends Component<IProps, IState> {
         err.graphQLErrors[0].extensions.exception
       ) {
         const { message, key } = err.graphQLErrors[0].extensions.exception[0];
+
+        switch (key) {
+          case "username":
+            if (this.usernameInputRef && this.usernameInputRef.current) {
+              this.usernameInputRef.current.focus();
+            }
+            break;
+          case "email":
+            if (this.emailInputRef && this.emailInputRef.current) {
+              this.emailInputRef.current.focus();
+            }
+            break;
+          case "password":
+            if (this.passwordInputRef && this.passwordInputRef.current) {
+              this.passwordInputRef.current.focus();
+            }
+            break;
+          default:
+            break;
+        }
+
         this.setState(() => ({
           hasError: true,
           focusedElement: key,
@@ -372,7 +410,6 @@ class SignUpController extends Component<IProps, IState> {
           errorMessage: err.message
         }));
       }
-    } finally {
       this.setState(() => ({ isLoading: false }));
     }
   };
@@ -458,9 +495,16 @@ class SignUpController extends Component<IProps, IState> {
 }
 
 const mapStateToProps = (state: IRootState) => ({
-  NODE_ENV: state.environment.NODE_ENV
+  NODE_ENV: state.environment.NODE_ENV,
+  userId: state.userUniversal.userId
 });
 
-export const SignUp = connect(mapStateToProps)(
-  withCookies(withApollo(SignUpController))
-);
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+  login: (userId: string) => dispatch(setUserId(userId)),
+  setName: (username: string) => dispatch(setUserName(username))
+});
+
+export const SignUp = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(withCookies(withApollo(SignUpController)));
