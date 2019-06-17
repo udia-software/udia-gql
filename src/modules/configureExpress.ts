@@ -1,8 +1,8 @@
 import express from "express";
-import session from "express-session";
 import { createReadStream } from "fs";
 import { join } from "path";
 import { createElement } from "react";
+import { Cookies, CookiesProvider } from "react-cookie";
 import { renderToNodeStream } from "react-dom/server";
 import { FilledContext, HelmetProvider } from "react-helmet-async";
 import { Provider } from "react-redux";
@@ -10,19 +10,14 @@ import { StaticRouter } from "react-router";
 import { createStore } from "redux";
 import { StreamInjector } from "stream-inject";
 import { ServerStyleSheet } from "styled-components";
+import cookiesMiddleware from "universal-cookie-express";
 import { ApplicationLayout } from "../components/layout";
-import { NODE_ENV, SESSION_SECRET } from "../constants";
+import { NODE_ENV } from "../constants";
+import Auth from "./auth";
 import { IRootState, rootReducer } from "./configureReduxStore";
 
 const PUBLIC_PATH_DIR = join(__dirname, "..", "public");
 export const app = express();
-
-app.use(
-  session({
-    secret: SESSION_SECRET,
-    cookie: { secure: NODE_ENV !== "development" }
-  })
-);
 
 // Application Meta
 app.disable("x-powered-by");
@@ -45,19 +40,43 @@ app.use(
   })
 );
 
+app.use(cookiesMiddleware());
 app.get("/*", (req, res) => {
   res.type("html");
-  // Initialize Redux Store & State
-  const store = createStore(rootReducer);
-  const reduxState: IRootState = store.getState() as IRootState;
+
+  // Initialize Empty Redux Store & State
+  let store = createStore(rootReducer);
+  const reduxState: IRootState = store.getState();
+
+  // Check if user is authenticated
+  const cookies: Cookies = (req as any).universalCookies;
+  const jwt: string | undefined = cookies.get("jwt");
+  if (jwt) {
+    const { uuid } = Auth.verifyUserJWT(jwt);
+    if (uuid) {
+      // re-create the store with preloaded user data
+      reduxState.userUniversal.userId = uuid;
+      store = createStore(rootReducer, reduxState);
+    } else {
+      // invalid JWT supplied, clear it
+      cookies.remove("jwt", {
+        path: "/",
+        secure: NODE_ENV === "production",
+        sameSite: true
+      });
+    }
+  }
+
+  // TODO: address Helmet filled context empty on SSR no JS
   const helmetContext: FilledContext | {} = {};
 
   // Construct JSX (No shorthand)
   const appLayout = createElement(ApplicationLayout);
+  const withCookies = createElement(CookiesProvider, { cookies }, appLayout);
   const withRouter = createElement(
     StaticRouter,
     { context: {}, location: req.url },
-    appLayout
+    withCookies
   );
   const withRedux = createElement(Provider, { store }, withRouter);
   const withHelmet = createElement(

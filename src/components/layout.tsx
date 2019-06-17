@@ -3,7 +3,12 @@ import React from "react";
 import { ApolloProvider } from "react-apollo";
 import { Helmet } from "react-helmet-async";
 import { connect } from "react-redux";
-import { Route, RouteComponentProps, Switch, withRouter } from "react-router-dom";
+import {
+  Route,
+  RouteComponentProps,
+  Switch,
+  withRouter
+} from "react-router-dom";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
 import { gqlClient } from "../modules/gqlClient";
 import { About } from "./pages/about";
@@ -14,7 +19,12 @@ import { NotFound } from "./pages/notFound";
 import { PageWrapper } from "./pages/pageWrapper";
 import { SignOut } from "./pages/signOut";
 import { SignUp } from "./pages/signUp";
-import styled, { DarkTheme, IThemeInterface, LightTheme, ThemeProvider } from "./static/appStyles";
+import styled, {
+  DarkTheme,
+  IThemeInterface,
+  LightTheme,
+  ThemeProvider
+} from "./static/appStyles";
 import "./static/fontAwesomeIcons";
 
 const ElemLayout = styled.div`
@@ -26,7 +36,10 @@ interface IState {
   theme: IThemeInterface;
 }
 
-class ApplicationLayout extends React.PureComponent<RouteComponentProps, IState> {
+class ApplicationLayout extends React.PureComponent<
+  RouteComponentProps,
+  IState
+> {
   constructor(props: RouteComponentProps) {
     super(props);
     this.state = {
@@ -41,14 +54,18 @@ class ApplicationLayout extends React.PureComponent<RouteComponentProps, IState>
           <ElemLayout>
             <Helmet>
               <title>UDIA</title>
-              <meta name="description" content="Universal Dream Infinite Awareness" />
+              <meta
+                name="description"
+                content="Universal Dream Infinite Awareness"
+              />
             </Helmet>
             <Route
               render={(props: { location: Location }) => (
                 <TransitionGroup
                   className="relative-transition-group"
                   component={PageWrapper}
-                  toggleTheme={this.toggleTheme}>
+                  toggleTheme={this.toggleTheme}
+                >
                   <CSSTransition
                     key={props.location.key}
                     classNames="page-fade"
@@ -74,11 +91,15 @@ class ApplicationLayout extends React.PureComponent<RouteComponentProps, IState>
   }
 
   protected toggleTheme = () => {
-    this.setState(({ theme }) => ({ theme: theme === DarkTheme ? LightTheme : DarkTheme }));
-  }
+    this.setState(({ theme }) => ({
+      theme: theme === DarkTheme ? LightTheme : DarkTheme
+    }));
+  };
 }
 
 // connect with Router for reloading on location change
 const mapStateToProps = () => ({});
-const ConnectedApplicationLayout = withRouter(connect(mapStateToProps)(ApplicationLayout));
+const ConnectedApplicationLayout = withRouter(
+  connect(mapStateToProps)(ApplicationLayout)
+);
 export { ConnectedApplicationLayout as ApplicationLayout };

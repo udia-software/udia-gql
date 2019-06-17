@@ -10,8 +10,11 @@ import React, {
   RefObject
 } from "react";
 import { withApollo } from "react-apollo";
+import { Cookies, withCookies } from "react-cookie";
 import { Helmet } from "react-helmet-async";
+import { connect } from "react-redux";
 import { ICryptoKey } from "../../graphql/schema";
+import { IRootState } from "../../modules/configureReduxStore";
 import Crypt from "../../modules/crypt";
 import {
   IErrorMessage,
@@ -59,6 +62,8 @@ interface IState {
 
 interface IProps {
   client: ApolloClient<{}>;
+  cookies: Cookies;
+  NODE_ENV: string;
 }
 
 class SignUpController extends Component<IProps, IState> {
@@ -338,9 +343,18 @@ class SignUpController extends Component<IProps, IState> {
       });
       // tslint:disable-next-line: no-console
       console.log(output.data.createUser);
-
+      const { cookies, NODE_ENV } = this.props;
+      cookies.set("jwt", output.data.createUser.jwt, {
+        path: "/",
+        secure: NODE_ENV === "production",
+        sameSite: true
+      });
     } catch (err) {
-      if (err.graphQLErrors && err.graphQLErrors[0].extensions && err.graphQLErrors[0].extensions.exception) {
+      if (
+        err.graphQLErrors &&
+        err.graphQLErrors[0].extensions &&
+        err.graphQLErrors[0].extensions.exception
+      ) {
         const { message, key } = err.graphQLErrors[0].extensions.exception[0];
         this.setState(() => ({
           hasError: true,
@@ -443,4 +457,10 @@ class SignUpController extends Component<IProps, IState> {
   };
 }
 
-export const SignUp = withApollo(SignUpController);
+const mapStateToProps = (state: IRootState) => ({
+  NODE_ENV: state.environment.NODE_ENV
+});
+
+export const SignUp = connect(mapStateToProps)(
+  withCookies(withApollo(SignUpController))
+);

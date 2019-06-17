@@ -1,5 +1,6 @@
 import "katex/dist/katex.css";
 import { createElement } from "react";
+import { CookiesProvider } from "react-cookie";
 import ReactDOM from "react-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Provider as ReduxProvider } from "react-redux";
@@ -23,7 +24,8 @@ const preloadedState = window.__PRELOADED_REDUX_DATA__;
 const store = createStore(rootReducer, preloadedState);
 const appDom = document.getElementById("root");
 const appLayout = createElement(ApplicationLayout);
-const withRouter = createElement(BrowserRouter, undefined, appLayout);
+const withCookies = createElement(CookiesProvider, undefined, appLayout);
+const withRouter = createElement(BrowserRouter, undefined, withCookies);
 const withRedux = createElement(ReduxProvider, { store }, withRouter);
 const withHelmet = createElement(HelmetProvider, undefined, withRedux);
 

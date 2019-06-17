@@ -70,7 +70,7 @@ const HeaderComp = (props: { nodeEnv: string }) => (
 );
 
 const mapStateToProps = (state: IRootState) => ({
-  nodeEnv: state.environment.STAGE
+  nodeEnv: state.environment.NODE_ENV
 });
 
 const Header = connect(mapStateToProps)(HeaderComp);
