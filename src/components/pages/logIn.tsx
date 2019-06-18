@@ -298,8 +298,6 @@ class LogInController extends Component<IProp, IState> {
         err.graphQLErrors[0].extensions &&
         err.graphQLErrors[0].extensions.exception
       ) {
-        console.log(err.graphQLErrors[0].extensions.exception);
-
         const { message } = err.graphQLErrors[0].extensions.exception[0];
         this.setState(() => ({
           hasError: true,

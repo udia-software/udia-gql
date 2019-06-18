@@ -70,7 +70,7 @@ resources:
   Resources:
     UsersDynamoDbTable:
       Type: 'AWS::DynamoDB::Table'
-      DeletionPolicy: Snapshot
+      DeletionPolicy: Retain
       Properties:
         AttributeDefinitions:
           - AttributeName: uuid
