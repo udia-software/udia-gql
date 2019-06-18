@@ -58,6 +58,15 @@ export interface ICreateUserInput {
   encryptKeyPayload: ICryptoKey;
 }
 
+const InputSignInUser = `input SignInUserInput {
+  username: String!
+  pwh: String!
+}`;
+export interface ISignInUserInput {
+  username: string;
+  pwh: string;
+}
+
 /**
  * pwFunc options intended for pbkdf2 in Crypt.deriveMasterKeys
  * http://antelle.net/argon2-browser/
@@ -108,6 +117,7 @@ const Query = `type Query {
 }`;
 const Mutation = `type Mutation {
   createUser(data: CreateUserInput!): UserAuthPayload!
+  signInUser(data: SignInUserInput!): UserAuthPayload!
 }`;
 // Custom scalars should also be entered in the resolvers
 const Scalars = `scalar Long`;
@@ -118,6 +128,7 @@ const gqlTypes: ReadonlyArray<string> = [
   InputEncryptedPayload,
   InputCryptoKey,
   InputCreateUser,
+  InputSignInUser,
   InputPwFuncOptions,
   TypePwFuncOptions,
   TypeUserAuthPayload,

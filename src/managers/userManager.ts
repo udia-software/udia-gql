@@ -15,6 +15,7 @@ import {
 import {
   ICreateUserInput,
   IPwFuncOptions,
+  ISignInUserInput,
   IUserAuthParams,
   IUserAuthPayload
 } from "../graphql/schema";
@@ -189,6 +190,61 @@ export default class UserManager {
     }
   }
 
+  public static async signInUser(
+    params: ISignInUserInput
+  ): Promise<IUserAuthPayload> {
+    const { username, pwh } = params;
+
+    // Get the user from the database
+    const lUsername = username
+      .normalize("NFKC")
+      .trim()
+      .toLowerCase();
+    const usernameId = uuidv5(lUsername, USERS_UUID_NS);
+    const checkUsernameParams: DocumentClient.QueryInput = {
+      TableName: USERS_TABLE,
+      IndexName: "PayloadIndex",
+      KeyConditionExpression: "payloadId = :usernameId",
+      ExpressionAttributeValues: { ":usernameId": usernameId },
+      ExpressionAttributeNames: { "#uuid": "uuid" },
+      ProjectionExpression: "#uuid, payload"
+    };
+    const output = await new Promise<DocumentClient.QueryOutput>(
+      (resolve, reject) =>
+        docDbClient.query(checkUsernameParams, (err, data) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data);
+          }
+        })
+    );
+    if (output.Count && output.Items) {
+      const projection = output.Items[0];
+      const serverHash = projection.payload.pwServerHash;
+      const uuid = projection.uuid;
+      if (await Auth.verifyPassword(serverHash, pwh)) {
+        return {
+          jwt: Auth.signUserJWT(uuid),
+          user: {
+            uuid,
+            username: projection.payload.username,
+            pwFunc: projection.payload.pwFunc,
+            pwFuncOptions: projection.payload.PwFuncOptions,
+            createdAt: projection.payload.createdAt
+          }
+        };
+      }
+    } else {
+      throw new UserInputError("User does not exist", [
+        { key: "username", message: "User does not exist." }
+      ]);
+    }
+    throw new UserInputError("Incorrect password", [
+      { key: "password", message: "Incorrect password." }
+    ]);
+  }
+
   public static async getUserAuthParams(
     username: string
   ): Promise<IUserAuthParams> {
@@ -230,20 +286,21 @@ export default class UserManager {
     ]);
   }
 
-  public static async getUsername(uuid: string): Promise<string|undefined> {
+  public static async getUsername(uuid: string): Promise<string | undefined> {
     const getUsernameParams: DocumentClient.GetItemInput = {
       TableName: USERS_TABLE,
       Key: { uuid, type: this.TYPE_USERNAME },
       ProjectionExpression: "payload"
-    }
+    };
     const output = await new Promise<DocumentClient.GetItemOutput>(
-      (resolve, reject) => docDbClient.get(getUsernameParams, (err, data) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(data);
-        }
-      })
+      (resolve, reject) =>
+        docDbClient.get(getUsernameParams, (err, data) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data);
+          }
+        })
     );
     if (output && output.Item) {
       return output.Item.payload.username;

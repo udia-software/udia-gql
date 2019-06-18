@@ -1,26 +1,49 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import ApolloClient from "apollo-client";
 import gql from "graphql-tag";
 import React, {
-  ChangeEventHandler, Component, createRef, FocusEventHandler, FormEventHandler, MouseEventHandler, RefObject
+  ChangeEventHandler,
+  Component,
+  createRef,
+  FocusEventHandler,
+  FormEventHandler,
+  MouseEventHandler,
+  RefObject
 } from "react";
 import { withApollo } from "react-apollo";
+import { Cookies, withCookies } from "react-cookie";
 import { Helmet } from "react-helmet-async";
-import { CSSTransition, TransitionGroup } from "react-transition-group";
+import { connect } from "react-redux";
+import { Redirect } from "react-router";
+import { Dispatch } from "redux";
+import {
+  IRootState,
+  ISetUserIDAction,
+  ISetUserNameAction,
+  setUserId,
+  setUserName
+} from "../../modules/configureReduxStore";
+import Crypt from "../../modules/crypt";
+import { LoginPasswordFormField } from "../composite/passwordFormField";
+import { LoginUsernameFormField } from "../composite/usernameFormField";
 import { Checkbox } from "../static/checkbox";
 import {
-  CenteredListItem, Form, FormField, FormFieldset, FormInput, FormLabel, FormLabelContent, FormLegend,
-  FormOutput, SubmitButton, UnstyledList
+  Form,
+  FormField,
+  FormFieldset,
+  FormLabel,
+  FormLabelContent,
+  FormLegend,
+  FormOutput,
+  SubmitButton
 } from "../static/formHelpers";
-import { A, Center, GreenIcon, H1, Link, RedIcon } from "../static/themedHelpers";
+import { Center, H1, Link } from "../static/themedHelpers";
 
 interface IState {
   username: string;
   password: string;
+  focusedElement: string;
   isLoading: boolean;
-  isFocusUsername: boolean;
   unameExists?: boolean;
-  isFocusPassword: boolean;
   pwExists?: boolean;
   showPassword: boolean;
   rememberUser: boolean;
@@ -30,21 +53,26 @@ interface IState {
 
 interface IProp {
   client: ApolloClient<{}>;
+  cookies: Cookies;
+  NODE_ENV: string;
+  userId?: string;
+  login: (userId: string) => ISetUserIDAction;
+  setName: (username: string) => ISetUserNameAction;
 }
 
 class LogInController extends Component<IProp, IState> {
   private TIP_TIMEOUT_MS = 200;
   private usernameInputRef: RefObject<HTMLInputElement>;
   private passwordInputRef: RefObject<HTMLInputElement>;
+  private isRedirecting: boolean;
 
   constructor(props: IProp) {
     super(props);
     this.state = {
       username: "",
       password: "",
+      focusedElement: "",
       isLoading: false,
-      isFocusUsername: false,
-      isFocusPassword: false,
       showPassword: false,
       rememberUser: false,
       hasError: false,
@@ -52,22 +80,30 @@ class LogInController extends Component<IProp, IState> {
     };
     this.usernameInputRef = createRef();
     this.passwordInputRef = createRef();
+    this.isRedirecting = false;
   }
 
   public render() {
     const {
       username,
       password,
+      focusedElement,
       isLoading,
-      isFocusUsername,
       unameExists,
-      isFocusPassword,
       pwExists,
       showPassword,
       rememberUser,
       hasError,
       errorMessage
     } = this.state;
+
+    // if the user is logged in, redirect to the home page.
+    if (this.props.userId && !isLoading) {
+      if (!this.isRedirecting) {
+        this.isRedirecting = true;
+        return <Redirect to="/" />;
+      }
+    }
 
     let submitButtonText = "Submit";
     const showFormErrors =
@@ -89,118 +125,30 @@ class LogInController extends Component<IProp, IState> {
         <Form autoComplete="off" method="POST" onSubmit={this.handleSubmit}>
           <FormFieldset>
             <FormLegend>Welcome back, User.</FormLegend>
-            <FormField>
-              <FormLabel>
-                <FormLabelContent>
-                  <span>
-                    Username{" "}
-                    {typeof unameExists !== "undefined" && !unameExists && (
-                      <RedIcon icon="times" />
-                    )}
-                  </span>
-                </FormLabelContent>
-                <FormInput
-                  autoComplete="off"
-                  type="text"
-                  name="username"
-                  onChange={this.handleInputChange}
-                  onFocus={this.handleInputFocus}
-                  onBlur={this.handleInputBlur}
-                  value={username}
-                  disabled={isLoading}
-                  ref={this.usernameInputRef}
-                />
-                <TransitionGroup>
-                  {(isFocusUsername ||
-                    (typeof unameExists !== "undefined" && !unameExists)) && (
-                      <CSSTransition
-                        classNames="fade"
-                        timeout={this.TIP_TIMEOUT_MS}
-                        unmountOnExit={true}
-                      >
-                        <FormOutput>
-                          <UnstyledList>
-                            <CenteredListItem>
-                              <code>len(uname) &gt; 0</code>
-                              {unameExists ? (
-                                <GreenIcon icon="check" />
-                              ) : (
-                                  <RedIcon icon="times" />
-                                )}
-                            </CenteredListItem>
-                          </UnstyledList>
-                        </FormOutput>
-                      </CSSTransition>
-                    )}
-                </TransitionGroup>
-              </FormLabel>
-            </FormField>
-            <FormField>
-              <FormLabel>
-                <FormLabelContent>
-                  <span>
-                    Password{" "}
-                    {typeof pwExists !== "undefined" && !pwExists && (
-                      <RedIcon icon="times" />
-                    )}
-                  </span>
-                  {showPassword ? (
-                    <A
-                      style={{ userSelect: "none" }}
-                      onClick={this.toggleShowPassword}
-                    >
-                      Hide{" "}
-                      <FontAwesomeIcon
-                        style={{ height: "0.8em" }}
-                        icon="eye-slash"
-                      />
-                    </A>
-                  ) : (
-                      <A
-                        style={{ userSelect: "none" }}
-                        onClick={this.toggleShowPassword}
-                      >
-                        Show{" "}
-                        <FontAwesomeIcon style={{ height: "0.8em" }} icon="eye" />
-                      </A>
-                    )}
-                </FormLabelContent>
-                <FormInput
-                  autoComplete="off"
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  onChange={this.handleInputChange}
-                  onFocus={this.handleInputFocus}
-                  onBlur={this.handleInputBlur}
-                  value={password}
-                  disabled={isLoading}
-                  ref={this.passwordInputRef}
-                />
-                <TransitionGroup>
-                  {(isFocusPassword ||
-                    (typeof pwExists !== "undefined" && !pwExists)) && (
-                      <CSSTransition
-                        classNames="fade"
-                        timeout={this.TIP_TIMEOUT_MS}
-                        unmountOnExit={true}
-                      >
-                        <FormOutput>
-                          <UnstyledList>
-                            <CenteredListItem>
-                              <code>len(pw) &gt; 0</code>
-                              {pwExists ? (
-                                <GreenIcon icon="check" />
-                              ) : (
-                                  <RedIcon icon="times" />
-                                )}
-                            </CenteredListItem>
-                          </UnstyledList>
-                        </FormOutput>
-                      </CSSTransition>
-                    )}
-                </TransitionGroup>
-              </FormLabel>
-            </FormField>
+            <LoginUsernameFormField
+              unameExists={unameExists}
+              handleInputChange={this.handleInputChange}
+              handleInputFocus={this.handleInputFocus}
+              handleInputBlur={this.handleInputBlur}
+              username={username}
+              isLoading={isLoading}
+              usernameInputRef={this.usernameInputRef}
+              isFocusUsername={focusedElement === "username"}
+              tipTimeout={this.TIP_TIMEOUT_MS}
+            />
+            <LoginPasswordFormField
+              pwExists={pwExists}
+              showPassword={showPassword}
+              toggleShowPassword={this.toggleShowPassword}
+              handleInputChange={this.handleInputChange}
+              handleInputFocus={this.handleInputFocus}
+              handleInputBlur={this.handleInputBlur}
+              password={password}
+              isLoading={isLoading}
+              passwordInputRef={this.passwordInputRef}
+              isFocusPassword={focusedElement === "password"}
+              tipTimeout={this.TIP_TIMEOUT_MS}
+            />
             <FormField>
               <FormLabel style={{ cursor: "pointer" }}>
                 <FormLabelContent>
@@ -249,23 +197,19 @@ class LogInController extends Component<IProp, IState> {
 
   protected handleInputFocus: FocusEventHandler<HTMLInputElement> = e => {
     const focusedElement = e.currentTarget.name;
-    if (focusedElement === "username") {
-      this.setState(() => ({ isFocusUsername: true }));
-    } else if (focusedElement === "password") {
-      this.setState(() => ({ isFocusPassword: true }));
-    }
+    this.setState(() => ({ focusedElement }));
   };
 
   protected handleInputBlur: FocusEventHandler<HTMLInputElement> = e => {
     const focusedElement = e.currentTarget.name;
     if (focusedElement === "username") {
       this.setState(({ username }) => ({
-        isFocusUsername: false,
+        focusedElement: "username",
         unameExists: !!username
       }));
     } else if (focusedElement === "password") {
       this.setState(({ password }) => ({
-        isFocusPassword: false,
+        focusedElement: "password",
         pwExists: !!password
       }));
     }
@@ -285,38 +229,107 @@ class LogInController extends Component<IProp, IState> {
   protected handleSubmit: FormEventHandler<HTMLFormElement> = async e => {
     e.preventDefault();
     const { client } = this.props;
-    const { username } = this.state;
+    const { username, password } = this.state;
+
     this.setState(() => ({ isLoading: true }));
+
     try {
-      const output = await client.query({
-        query: gql`query GetUserAuthParams($username: String!) {
-          getUserAuthParams(username: $username) {
-            pwFunc
-            pwFuncOptions {
-              nonce
-              cost
+      const getAuthParamsOutput = await client.query({
+        query: gql`
+          query GetUserAuthParams($username: String!) {
+            getUserAuthParams(username: $username) {
+              pwFunc
+              pwFuncOptions {
+                nonce
+                cost
+              }
             }
           }
-        }`,
+        `,
         variables: {
           username
-        }
+        },
+        fetchPolicy: "no-cache"
       });
-      // tslint:disable-next-line: no-console
-      console.log(output);
+
+      if (getAuthParamsOutput.data.getUserAuthParams.pwFunc !== "pbkdf2") {
+        throw new Error(`Only pbkdf2 supported.`);
+      }
+      const {
+        nonce,
+        cost
+      } = getAuthParamsOutput.data.getUserAuthParams.pwFuncOptions;
+      const { pw } = await Crypt.deriveMasterKeys(
+        username,
+        password,
+        nonce,
+        cost
+      );
+
+      // todo CRYPTO KEYS
+
+      const loginOutput = await client.mutate({
+        mutation: gql`
+          mutation SignInUser($data: SignInUserInput!) {
+            signInUser(data: $data) {
+              jwt
+              user {
+                uuid
+                username
+              }
+            }
+          }
+        `,
+        variables: { data: { username, pwh: pw } },
+        fetchPolicy: "no-cache"
+      });
+      const { cookies, NODE_ENV, setName, login } = this.props;
+      cookies.set("jwt", loginOutput.data.signInUser.jwt, {
+        path: "/",
+        secure: NODE_ENV === "production",
+        sameSite: true
+      });
+      setName(loginOutput.data.signInUser.user.username);
+      this.setState(() => ({ isLoading: false }));
+      login(loginOutput.data.signInUser.user.uuid);
     } catch (err) {
-      // tslint:disable-next-line: no-console
-      console.error(err);
-      if (err.graphQLErrors) {
+      if (
+        err.graphQLErrors &&
+        err.graphQLErrors[0].extensions &&
+        err.graphQLErrors[0].extensions.exception
+      ) {
+        console.log(err.graphQLErrors[0].extensions.exception);
+
+        const { message } = err.graphQLErrors[0].extensions.exception[0];
         this.setState(() => ({
           hasError: true,
-          errorMessage: err.graphQLErrors[0].extensions.exception[0].message
+          errorMessage: message
+        }));
+      } else if (err.networkError) {
+        this.setState(() => ({
+          errorMessage: err.networkError
+        }));
+      } else {
+        this.setState(() => ({
+          errorMessage: err.message
         }));
       }
-    } finally {
       this.setState(() => ({ isLoading: false }));
     }
   };
 }
 
-export const LogIn = withApollo(LogInController);
+const mapStateToProps = (state: IRootState) => ({
+  NODE_ENV: state.environment.NODE_ENV,
+  userId: state.userUniversal.userId
+});
+
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+  login: (userId: string) => dispatch(setUserId(userId)),
+  setName: (username: string) => dispatch(setUserName(username))
+});
+
+export const LogIn = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(withCookies(withApollo(LogInController)));

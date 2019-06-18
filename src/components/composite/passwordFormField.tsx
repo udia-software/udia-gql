@@ -146,3 +146,88 @@ export const PasswordFormField = ({
     </FormLabel>
   </FormField>
 );
+
+interface ILoginProps {
+  pwExists?: boolean;
+  showPassword: boolean;
+  toggleShowPassword: MouseEventHandler<HTMLAnchorElement>;
+  handleInputChange: ChangeEventHandler<HTMLInputElement>;
+  handleInputFocus: FocusEventHandler<HTMLInputElement>;
+  handleInputBlur: FocusEventHandler<HTMLInputElement>;
+  password: string;
+  isLoading: boolean;
+  passwordInputRef: RefObject<HTMLInputElement>;
+  isFocusPassword: boolean;
+  tipTimeout: number;
+}
+
+export const LoginPasswordFormField = ({
+  pwExists,
+  showPassword,
+  toggleShowPassword,
+  handleInputChange,
+  handleInputFocus,
+  handleInputBlur,
+  password,
+  isLoading,
+  passwordInputRef,
+  isFocusPassword,
+  tipTimeout
+}: ILoginProps) => (
+  <FormField>
+    <FormLabel>
+      <FormLabelContent>
+        <span>
+          Password{" "}
+          {typeof pwExists !== "undefined" && !pwExists && (
+            <RedIcon icon="times" />
+          )}
+        </span>
+        {showPassword ? (
+          <A style={{ userSelect: "none" }} onClick={toggleShowPassword}>
+            Hide{" "}
+            <FontAwesomeIcon style={{ height: "0.8em" }} icon="eye-slash" />
+          </A>
+        ) : (
+          <A style={{ userSelect: "none" }} onClick={toggleShowPassword}>
+            Show <FontAwesomeIcon style={{ height: "0.8em" }} icon="eye" />
+          </A>
+        )}
+      </FormLabelContent>
+      <FormInput
+        autoComplete="off"
+        type={showPassword ? "text" : "password"}
+        name="password"
+        onChange={handleInputChange}
+        onFocus={handleInputFocus}
+        onBlur={handleInputBlur}
+        value={password}
+        disabled={isLoading}
+        ref={passwordInputRef}
+      />
+      <TransitionGroup>
+        {(isFocusPassword ||
+          (typeof pwExists !== "undefined" && !pwExists)) && (
+          <CSSTransition
+            classNames="fade"
+            timeout={tipTimeout}
+            unmountOnExit={true}
+          >
+            <FormOutput>
+              <UnstyledList>
+                <CenteredListItem>
+                  <code>len(pw) &gt; 0</code>
+                  {pwExists ? (
+                    <GreenIcon icon="check" />
+                  ) : (
+                    <RedIcon icon="times" />
+                  )}
+                </CenteredListItem>
+              </UnstyledList>
+            </FormOutput>
+          </CSSTransition>
+        )}
+      </TransitionGroup>
+    </FormLabel>
+  </FormField>
+);

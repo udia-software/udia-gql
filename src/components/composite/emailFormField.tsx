@@ -1,4 +1,4 @@
-import React, { ChangeEventHandler, FocusEventHandler } from "react";
+import React, { ChangeEventHandler, FocusEventHandler, RefObject } from "react";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
 import {
   CenteredListItem,
@@ -62,7 +62,9 @@ export const EmailFormField = ({
       />
       <TransitionGroup>
         {(isFocusEmail ||
-          (email && typeof emailValidated !== "undefined" && !emailValidated)) && (
+          (email &&
+            typeof emailValidated !== "undefined" &&
+            !emailValidated)) && (
           <CSSTransition
             classNames="fade"
             timeout={tipTimeout}

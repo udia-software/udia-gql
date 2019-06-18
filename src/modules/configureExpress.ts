@@ -14,9 +14,9 @@ import { ServerStyleSheet } from "styled-components";
 import cookiesMiddleware from "universal-cookie-express";
 import { ApplicationLayout } from "../components/layout";
 import { NODE_ENV } from "../constants";
+import UserManager from "../managers/userManager";
 import Auth from "./auth";
 import { IRootState, rootReducer } from "./configureReduxStore";
-import UserManager from "../managers/userManager";
 
 const PUBLIC_PATH_DIR = join(__dirname, "..", "public");
 export const app = express();

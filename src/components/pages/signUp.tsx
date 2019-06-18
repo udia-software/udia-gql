@@ -355,7 +355,8 @@ class SignUpController extends Component<IProps, IState> {
             signKeyPayload,
             encryptKeyPayload
           }
-        }
+        },
+        fetchPolicy: "no-cache"
       });
       const { cookies, NODE_ENV, setName, login } = this.props;
       cookies.set("jwt", output.data.createUser.jwt, {

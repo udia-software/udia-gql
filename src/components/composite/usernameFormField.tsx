@@ -96,3 +96,74 @@ export const UsernameFormField = ({
     </FormLabel>
   </FormField>
 );
+
+interface ILoginProps {
+  unameExists?: boolean;
+  handleInputChange: ChangeEventHandler<HTMLInputElement>;
+  handleInputFocus: FocusEventHandler<HTMLInputElement>;
+  handleInputBlur: FocusEventHandler<HTMLInputElement>;
+  username: string;
+  isLoading: boolean;
+  usernameInputRef: RefObject<HTMLInputElement>;
+  isFocusUsername: boolean;
+  tipTimeout: number;
+}
+
+export const LoginUsernameFormField = ({
+  unameExists,
+  handleInputChange,
+  handleInputFocus,
+  handleInputBlur,
+  username,
+  isLoading,
+  usernameInputRef,
+  isFocusUsername,
+  tipTimeout
+}: ILoginProps) => (
+  <FormField>
+    <FormLabel>
+      <FormLabelContent>
+        <span>
+          Username{" "}
+          {typeof unameExists !== "undefined" && !unameExists && (
+            <RedIcon icon="times" />
+          )}
+        </span>
+      </FormLabelContent>
+      <FormInput
+        autoComplete="off"
+        type="text"
+        name="username"
+        onChange={handleInputChange}
+        onFocus={handleInputFocus}
+        onBlur={handleInputBlur}
+        value={username}
+        disabled={isLoading}
+        ref={usernameInputRef}
+      />
+      <TransitionGroup>
+        {(isFocusUsername ||
+          (typeof unameExists !== "undefined" && !unameExists)) && (
+          <CSSTransition
+            classNames="fade"
+            timeout={tipTimeout}
+            unmountOnExit={true}
+          >
+            <FormOutput>
+              <UnstyledList>
+                <CenteredListItem>
+                  <code>len(uname) &gt; 0</code>
+                  {unameExists ? (
+                    <GreenIcon icon="check" />
+                  ) : (
+                    <RedIcon icon="times" />
+                  )}
+                </CenteredListItem>
+              </UnstyledList>
+            </FormOutput>
+          </CSSTransition>
+        )}
+      </TransitionGroup>
+    </FormLabel>
+  </FormField>
+);
