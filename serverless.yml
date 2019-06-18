@@ -60,17 +60,21 @@ provider:
         - dynamodb:PutItem
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
+        - dynamodb:BatchWriteItem
       Resource:
-        - "Fn::Join":
-          - ":"
-          - 
-            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.usersTable}"
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.usersTable}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.usersTable}/index/*"
 
 resources:
   Resources:
     UsersDynamoDbTable:
       Type: 'AWS::DynamoDB::Table'
-      DeletionPolicy: Retain
+      DeletionPolicy: Delete
       Properties:
         AttributeDefinitions:
           - AttributeName: uuid
