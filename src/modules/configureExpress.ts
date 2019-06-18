@@ -1,3 +1,4 @@
+import compression from "compression";
 import express from "express";
 import { createReadStream } from "fs";
 import { join } from "path";
@@ -20,6 +21,7 @@ import { IRootState, rootReducer } from "./configureReduxStore";
 
 const PUBLIC_PATH_DIR = join(__dirname, "..", "public");
 export const app = express();
+app.use(compression());
 
 // Application Meta
 app.disable("x-powered-by");
