@@ -24,12 +24,14 @@ import {
   setUserName
 } from "../../modules/configureReduxStore";
 import Crypt from "../../modules/crypt";
+import { LocalForageContext } from "../../modules/localForageContext";
 import {
   IErrorMessage,
   isEmailValid,
   isUsernameValid
 } from "../../modules/validators";
 import { EmailFormField } from "../composite/emailFormField";
+import { LoadingOverlay } from "../composite/loadingOverlay";
 import { PasswordFormField } from "../composite/passwordFormField";
 import { UsernameFormField } from "../composite/usernameFormField";
 import { Checkbox } from "../static/checkbox";
@@ -51,6 +53,7 @@ interface IState {
   password: string;
   focusedElement: string;
   isLoading: boolean;
+  loadingText: string;
   unameLengthOK: boolean;
   unameSpaceOK: boolean;
   unameValidated?: boolean;
@@ -78,6 +81,9 @@ interface IProps {
 }
 
 class SignUpController extends Component<IProps, IState> {
+  public static contextType = LocalForageContext;
+  public context!: React.ContextType<typeof LocalForageContext>;
+
   private TIP_TIMEOUT_MS = 200;
   private usernameInputRef: RefObject<HTMLInputElement>;
   private passwordInputRef: RefObject<HTMLInputElement>;
@@ -92,6 +98,7 @@ class SignUpController extends Component<IProps, IState> {
       password: "",
       focusedElement: "",
       isLoading: false,
+      loadingText: "",
       unameLengthOK: false,
       unameSpaceOK: false,
       emailAppearsOK: false,
@@ -118,6 +125,7 @@ class SignUpController extends Component<IProps, IState> {
       password,
       focusedElement,
       isLoading,
+      loadingText,
       unameLengthOK,
       unameSpaceOK,
       unameValidated,
@@ -155,13 +163,23 @@ class SignUpController extends Component<IProps, IState> {
     }
 
     return (
-      <Center>
+      <Center gridTemplateAreas={`"title" "form" "links";`}>
+        <LoadingOverlay
+          gridArea={"form"}
+          loading={isLoading}
+          loadingText={loadingText}
+        />
         <Helmet>
           <title>Sign Up - UDIA</title>
           <meta name="description" content="Create a new account, User." />
         </Helmet>
-        <H1>Sign Up</H1>
-        <Form autoComplete="off" method="post" onSubmit={this.handleSubmit}>
+        <H1 gridArea={"title"}>Sign Up</H1>
+        <Form
+          gridArea={"form"}
+          autoComplete="off"
+          method="post"
+          onSubmit={this.handleSubmit}
+        >
           <FormFieldset>
             <FormLegend>Hello there, User.</FormLegend>
             <UsernameFormField
@@ -304,7 +322,10 @@ class SignUpController extends Component<IProps, IState> {
       return;
     }
 
-    this.setState(() => ({ isLoading: true }));
+    this.setState(() => ({
+      isLoading: true,
+      loadingText: "Deriving cryptographic keys..."
+    }));
 
     const nonce = await Crypt.generateNonce();
     const pwCost = 100000;
@@ -315,20 +336,34 @@ class SignUpController extends Component<IProps, IState> {
       nonce,
       pwCost
     );
-    const { publicSignKey, secretSignKey } = Crypt.generateSigningKeyPair();
-    const { publicEncKey, secretEncKey } = Crypt.generateEncryptionKeyPair();
-    const encSecretSignKey = Crypt.symmetricEncrypt(secretSignKey, ek);
-    const encSecretEncKey = Crypt.symmetricEncrypt(secretEncKey, ek);
+
+    this.setState(() => ({
+      loadingText: "Create and encrypt item keys..."
+    }));
+    const signKeyPair = Crypt.generateSigningKeyPair();
+    const encryptKeyPair = Crypt.generateEncryptionKeyPair();
+    const encSecretSignKey = Crypt.symmetricEncrypt(
+      signKeyPair.secretSignKey,
+      ek
+    );
+    const encSecretEncKey = Crypt.symmetricEncrypt(
+      encryptKeyPair.secretEncKey,
+      ek
+    );
 
     const signKeyPayload: ICryptoKey = {
-      publicKey: publicSignKey,
+      publicKey: signKeyPair.publicSignKey,
       encKeyPayload: encSecretSignKey
     };
     const encryptKeyPayload: ICryptoKey = {
-      publicKey: publicEncKey,
+      publicKey: encryptKeyPair.publicEncKey,
       encKeyPayload: encSecretEncKey
     };
 
+    this.setState(() => ({
+      loadingText: "Creating new user..."
+    }));
+    let userId: string | undefined;
     try {
       const output = await client.mutate({
         mutation: gql`
@@ -358,20 +393,37 @@ class SignUpController extends Component<IProps, IState> {
         },
         fetchPolicy: "no-cache"
       });
-      const { cookies, NODE_ENV, setName, login } = this.props;
-      cookies.set("jwt", output.data.createUser.jwt, {
-        path: "/",
-        secure: NODE_ENV === "production",
-        sameSite: true
+      const { jwt, user } = output.data.createUser;
+
+      this.setState(() => ({
+        loadingText: "Persisting item keys..."
+      }));
+      await this.context.setItem("signKeyPair", signKeyPair);
+      await this.context.setItem("encryptKeyPair", encryptKeyPair);
+
+      const { setName } = this.props;
+      this.setState(() => ({
+        loadingText: "Persisting authentication token..."
+      }));
+      await fetch("/resource/jwt", {
+        method: "POST",
+        mode: "same-origin",
+        cache: "no-cache",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        redirect: "follow",
+        body: JSON.stringify({ jwt })
       });
-      setName(output.data.createUser.user.username);
-      this.setState(() => ({ isLoading: false }));
-      login(output.data.createUser.user.uuid);
+
+      setName(user.username);
+      userId = user.uuid;
     } catch (err) {
       if (
         err.graphQLErrors &&
+        err.graphQLErrors[0] &&
         err.graphQLErrors[0].extensions &&
-        err.graphQLErrors[0].extensions.exception
+        err.graphQLErrors[0].extensions.exception &&
+        err.graphQLErrors[0].extensions.exception[0]
       ) {
         const { message, key } = err.graphQLErrors[0].extensions.exception[0];
 
@@ -402,16 +454,22 @@ class SignUpController extends Component<IProps, IState> {
           emailValidated: key !== "email",
           errorMessage: message
         }));
-      } else if (err.networkError) {
+      } else if (err.message) {
         this.setState(() => ({
-          errorMessage: err.networkError
+          hasError: true,
+          errorMessage: err.message
         }));
       } else {
         this.setState(() => ({
-          errorMessage: err.message
+          hasError: true,
+          errorMessage: err.toString()
         }));
       }
+    } finally {
       this.setState(() => ({ isLoading: false }));
+      if (userId) {
+        this.props.login(userId);
+      }
     }
   };
 

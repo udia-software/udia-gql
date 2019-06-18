@@ -13,8 +13,9 @@ export const resolvers = {
   Mutation: {
     createUser: async (_: any, params: { data: ICreateUserInput }) =>
       UserManager.createUser(params.data),
-    signInUser: async (_: any, params: { data: ISignInUserInput }) =>
-      UserManager.signInUser(params.data),
+    signInUser: async (_: any, args: { data: ISignInUserInput }) => {
+      return UserManager.signInUser(args.data);
+    },
   },
   // Put custom scalars here
   Long: GraphQLTypeLong

@@ -1,7 +1,7 @@
 /**
  * Persisting user information into DynamoDB
  */
-import { UserInputError } from "apollo-server-core";
+import { AuthenticationError, UserInputError } from "apollo-server-core";
 import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import uuidv4 from "uuid/v4";
 import uuidv5 from "uuid/v5";
@@ -14,6 +14,7 @@ import {
 } from "../constants";
 import {
   ICreateUserInput,
+  ICryptoKey,
   IPwFuncOptions,
   ISignInUserInput,
   IUserAuthParams,
@@ -182,6 +183,8 @@ export default class UserManager {
           username: nUsername,
           pwFunc,
           pwFuncOptions,
+          signKeyPayload,
+          encryptKeyPayload,
           createdAt: now
         }
       };
@@ -219,30 +222,73 @@ export default class UserManager {
           }
         })
     );
-    if (output.Count && output.Items) {
-      const projection = output.Items[0];
-      const serverHash = projection.payload.pwServerHash;
-      const uuid = projection.uuid;
-      if (await Auth.verifyPassword(serverHash, pwh)) {
-        return {
-          jwt: Auth.signUserJWT(uuid),
-          user: {
-            uuid,
-            username: projection.payload.username,
-            pwFunc: projection.payload.pwFunc,
-            pwFuncOptions: projection.payload.PwFuncOptions,
-            createdAt: projection.payload.createdAt
-          }
-        };
-      }
-    } else {
+    if (!output.Count || !output.Items) {
       throw new UserInputError("User does not exist", [
         { key: "username", message: "User does not exist." }
       ]);
     }
-    throw new UserInputError("Incorrect password", [
-      { key: "password", message: "Incorrect password." }
-    ]);
+    const userProjection = output.Items[0];
+    const serverHash = userProjection.payload.pwServerHash;
+    const uuid = userProjection.uuid;
+    if (!(await Auth.verifyPassword(serverHash, pwh))) {
+      throw new UserInputError("Incorrect password", [
+        { key: "password", message: "Incorrect password." }
+      ]);
+    }
+    // Get the key payloads from the database
+    const getKeysParams: DocumentClient.QueryInput = {
+      TableName: USERS_TABLE,
+      KeyConditionExpression:
+        "#uuid = :uuid AND #type BETWEEN :signKeyType AND :encKeyType",
+      ExpressionAttributeNames: { "#uuid": "uuid", "#type": "type" },
+      ExpressionAttributeValues: {
+        ":encKeyType": this.TYPE_ENCRYPT_KEY,
+        ":signKeyType": this.TYPE_SIGN_KEY,
+        ":uuid": uuid
+      },
+      ProjectionExpression: "#type, payload"
+    };
+    const keysOutput = await new Promise<DocumentClient.QueryOutput>(
+      (resolve, reject) =>
+        docDbClient.query(getKeysParams, (err, data) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(data);
+          }
+        })
+    );
+    if (!keysOutput.Count || !keysOutput.Items || keysOutput.Count !== 2) {
+      throw new AuthenticationError("User key store broken");
+    }
+    let signKeyPayload: ICryptoKey | undefined;
+    let encryptKeyPayload: ICryptoKey | undefined;
+    for (const projection of keysOutput.Items) {
+      if (projection.type === this.TYPE_ENCRYPT_KEY) {
+        encryptKeyPayload = projection.payload;
+      } else if (projection.type === this.TYPE_SIGN_KEY) {
+        signKeyPayload = projection.payload;
+      } else {
+        throw new AuthenticationError(`Unexpected projection type ${projection.type}`);
+      }
+    }
+
+    if (!signKeyPayload || !encryptKeyPayload) {
+      throw new AuthenticationError("User key store broken");
+    }
+
+    return {
+      jwt: Auth.signUserJWT(uuid),
+      user: {
+        uuid,
+        username: userProjection.payload.username,
+        pwFunc: userProjection.payload.pwFunc,
+        pwFuncOptions: userProjection.payload.PwFuncOptions,
+        signKeyPayload,
+        encryptKeyPayload,
+        createdAt: userProjection.payload.createdAt
+      }
+    };
   }
 
   public static async getUserAuthParams(
@@ -286,7 +332,9 @@ export default class UserManager {
     ]);
   }
 
-  public static async getUsername(uuid: string): Promise<string | undefined> {
+  public static async seedCookiePayload(
+    uuid: string
+  ): Promise<{ username?: string }> {
     const getUsernameParams: DocumentClient.GetItemInput = {
       TableName: USERS_TABLE,
       Key: { uuid, type: this.TYPE_USERNAME },
@@ -303,9 +351,9 @@ export default class UserManager {
         })
     );
     if (output && output.Item) {
-      return output.Item.payload.username;
+      return { username: output.Item.payload.username };
     }
-    return undefined;
+    return {};
   }
 
   private static async isEmailAvailable(

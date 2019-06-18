@@ -22,7 +22,9 @@ import {
   setUserId,
   setUserName
 } from "../../modules/configureReduxStore";
-import Crypt from "../../modules/crypt";
+import Crypt, { IEncryptKeyPair, ISignKeyPair } from "../../modules/crypt";
+import { LocalForageContext } from "../../modules/localForageContext";
+import { LoadingOverlay } from "../composite/loadingOverlay";
 import { LoginPasswordFormField } from "../composite/passwordFormField";
 import { LoginUsernameFormField } from "../composite/usernameFormField";
 import { Checkbox } from "../static/checkbox";
@@ -43,6 +45,7 @@ interface IState {
   password: string;
   focusedElement: string;
   isLoading: boolean;
+  loadingText: string;
   unameExists?: boolean;
   pwExists?: boolean;
   showPassword: boolean;
@@ -61,6 +64,9 @@ interface IProp {
 }
 
 class LogInController extends Component<IProp, IState> {
+  public static contextType = LocalForageContext;
+  public context!: React.ContextType<typeof LocalForageContext>;
+
   private TIP_TIMEOUT_MS = 200;
   private usernameInputRef: RefObject<HTMLInputElement>;
   private passwordInputRef: RefObject<HTMLInputElement>;
@@ -73,6 +79,7 @@ class LogInController extends Component<IProp, IState> {
       password: "",
       focusedElement: "",
       isLoading: false,
+      loadingText: "",
       showPassword: false,
       rememberUser: false,
       hasError: false,
@@ -89,6 +96,7 @@ class LogInController extends Component<IProp, IState> {
       password,
       focusedElement,
       isLoading,
+      loadingText,
       unameExists,
       pwExists,
       showPassword,
@@ -116,13 +124,23 @@ class LogInController extends Component<IProp, IState> {
       submitButtonText = "Check Errors";
     }
     return (
-      <Center>
+      <Center gridTemplateAreas={`"title" "form" "links";`}>
+        <LoadingOverlay
+          gridArea={"form"}
+          loading={isLoading}
+          loadingText={loadingText}
+        />
         <Helmet>
           <title>Log In - UDIA</title>
           <meta name="description" content="Log into your account, User." />
         </Helmet>
-        <H1>Log In</H1>
-        <Form autoComplete="off" method="POST" onSubmit={this.handleSubmit}>
+        <H1 gridArea={"title"}>Log In</H1>
+        <Form
+          gridArea={"form"}
+          autoComplete="off"
+          method="POST"
+          onSubmit={this.handleSubmit}
+        >
           <FormFieldset>
             <FormLegend>Welcome back, User.</FormLegend>
             <LoginUsernameFormField
@@ -169,7 +187,9 @@ class LogInController extends Component<IProp, IState> {
             />
           </FormFieldset>
         </Form>
-        <Link to="/sign-up">← I do not have an account</Link>
+        <div>
+          <Link to="/sign-up">← I do not have an account</Link>
+        </div>
       </Center>
     );
   }
@@ -231,8 +251,11 @@ class LogInController extends Component<IProp, IState> {
     const { client } = this.props;
     const { username, password } = this.state;
 
-    this.setState(() => ({ isLoading: true }));
-
+    this.setState(() => ({
+      isLoading: true,
+      loadingText: "Getting authentication parameters..."
+    }));
+    let userId: string | undefined;
     try {
       const getAuthParamsOutput = await client.query({
         query: gql`
@@ -259,7 +282,11 @@ class LogInController extends Component<IProp, IState> {
         nonce,
         cost
       } = getAuthParamsOutput.data.getUserAuthParams.pwFuncOptions;
-      const { pw } = await Crypt.deriveMasterKeys(
+
+      this.setState(() => ({
+        loadingText: "Deriving cryptographic keys..."
+      }));
+      const { pw, ek } = await Crypt.deriveMasterKeys(
         username,
         password,
         nonce,
@@ -267,7 +294,9 @@ class LogInController extends Component<IProp, IState> {
       );
 
       // todo CRYPTO KEYS
-
+      this.setState(() => ({
+        loadingText: "Fetching authentication token..."
+      }));
       const loginOutput = await client.mutate({
         mutation: gql`
           mutation SignInUser($data: SignInUserInput!) {
@@ -276,6 +305,20 @@ class LogInController extends Component<IProp, IState> {
               user {
                 uuid
                 username
+                signKeyPayload {
+                  publicKey
+                  encKeyPayload {
+                    enc
+                    nonce
+                  }
+                }
+                encryptKeyPayload {
+                  publicKey
+                  encKeyPayload {
+                    enc
+                    nonce
+                  }
+                }
               }
             }
           }
@@ -283,36 +326,81 @@ class LogInController extends Component<IProp, IState> {
         variables: { data: { username, pwh: pw } },
         fetchPolicy: "no-cache"
       });
-      const { cookies, NODE_ENV, setName, login } = this.props;
-      cookies.set("jwt", loginOutput.data.signInUser.jwt, {
-        path: "/",
-        secure: NODE_ENV === "production",
-        sameSite: true
+      const { jwt, user } = loginOutput.data.signInUser;
+      const { setName } = this.props;
+
+      this.setState(() => ({
+        loadingText: "Decrypting item keys..."
+      }));
+      const {
+        enc: signEnc,
+        nonce: signNonce
+      } = user.signKeyPayload.encKeyPayload;
+      const secretSignKey = Crypt.symmetricDecrypt(
+        signEnc,
+        signNonce,
+        ek
+      ) as string;
+      const signKeyPair: ISignKeyPair = {
+        publicSignKey: user.signKeyPayload.publicKey,
+        secretSignKey
+      };
+      await this.context.setItem("signKeyPair", signKeyPair);
+      const {
+        enc: encryptEnc,
+        nonce: encryptNonce
+      } = user.encryptKeyPayload.encKeyPayload;
+      const secretEncKey = Crypt.symmetricDecrypt(
+        encryptEnc,
+        encryptNonce,
+        ek
+      ) as string;
+      const encryptKeyPair: IEncryptKeyPair = {
+        publicEncKey: user.encryptKeyPayload.publicKey,
+        secretEncKey
+      };
+      await this.context.setItem("encryptKeyPair", encryptKeyPair);
+
+      this.setState(() => ({
+        loadingText: "Persisting authentication token..."
+      }));
+      await fetch("/resource/jwt", {
+        method: "POST",
+        mode: "same-origin",
+        cache: "no-cache",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        redirect: "follow",
+        body: JSON.stringify({ jwt })
       });
-      setName(loginOutput.data.signInUser.user.username);
-      this.setState(() => ({ isLoading: false }));
-      login(loginOutput.data.signInUser.user.uuid);
+
+      setName(user.username);
+      userId = user.uuid;
     } catch (err) {
+      let errorMessage: string;
       if (
         err.graphQLErrors &&
+        err.graphQLErrors[0] &&
         err.graphQLErrors[0].extensions &&
-        err.graphQLErrors[0].extensions.exception
+        err.graphQLErrors[0].extensions.exception &&
+        err.graphQLErrors[0].extensions.exception[0]
       ) {
         const { message } = err.graphQLErrors[0].extensions.exception[0];
-        this.setState(() => ({
-          hasError: true,
-          errorMessage: message
-        }));
-      } else if (err.networkError) {
-        this.setState(() => ({
-          errorMessage: err.networkError
-        }));
+        errorMessage = message;
+      } else if (err.message) {
+        errorMessage = err.message;
       } else {
-        this.setState(() => ({
-          errorMessage: err.message
-        }));
+        errorMessage = err.toString();
       }
+      this.setState(() => ({
+        hasError: true,
+        errorMessage
+      }));
+    } finally {
       this.setState(() => ({ isLoading: false }));
+      if (userId) {
+        this.props.login(userId);
+      }
     }
   };
 }

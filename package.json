@@ -15,7 +15,7 @@
     "lint": "tslint --project . --config tslint.json",
     "debug": "SLS_DEBUG=* node --inspect node_modules/.bin/serverless offline --stage dev",
     "load_dev_db": "ts-node src/util/initDynamoDB.ts",
-    "deploy": "serverless deploy"
+    "deploy": "NODE_ENV=production serverless deploy"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.19",
@@ -30,6 +30,7 @@
     "aws-lambda": "^0.1.2",
     "aws-sdk": "^2.477.0",
     "body-parser": "^1.19.0",
+    "compression": "^1.7.4",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "graphql": "^14.3.1",
@@ -63,6 +64,7 @@
     "@babel/plugin-transform-runtime": "^7.4.4",
     "@types/aws-lambda": "^8.10.27",
     "@types/aws-serverless-express": "^3.3.1",
+    "@types/compression": "0.0.36",
     "@types/cors": "^2.8.5",
     "@types/graphql": "^14.2.1",
     "@types/jest": "^24.0.15",

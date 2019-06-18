@@ -9,6 +9,15 @@ type Primative = string | number | boolean | null;
 interface SerializableArray extends ReadonlyArray<Serializable> { }
 export type Serializable = Primative | Primative[] | SerializableArray;
 
+export interface ISignKeyPair {
+  publicSignKey: string;
+  secretSignKey: string;
+}
+export interface IEncryptKeyPair {
+  publicEncKey: string;
+  secretEncKey: string;
+}
+
 export default class Crypt {
   public static async generateNonce() {
     const nonceBuffer = Buffer.from(randomBytes(secretbox.nonceLength));
@@ -92,7 +101,7 @@ export default class Crypt {
   /**
    * Create a public and private asymmetric encryption key pair
    */
-  public static generateEncryptionKeyPair() {
+  public static generateEncryptionKeyPair(): IEncryptKeyPair {
     const { publicKey: pubKeyBuffer, secretKey: secKeyBuffer } = box.keyPair();
     const pubKey = Buffer.from(pubKeyBuffer).toString("base64");
     const secKey = Buffer.from(secKeyBuffer).toString("base64");
@@ -144,7 +153,7 @@ export default class Crypt {
   /**
    * Create a public and private signing key pair
    */
-  public static generateSigningKeyPair() {
+  public static generateSigningKeyPair(): ISignKeyPair {
     const { publicKey: pubKeyBuffer, secretKey: secKeyBuffer } = sign.keyPair();
     const pubKey = Buffer.from(pubKeyBuffer).toString("base64");
     const secKey = Buffer.from(secKeyBuffer).toString("base64");

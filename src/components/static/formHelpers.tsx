@@ -1,8 +1,11 @@
 import styled from "./appStyles";
+import { IWithGridArea } from "./themedHelpers";
 
-export const Form = styled.form`
-  padding-bottom: 1em;
-`;
+export const Form = styled.form<IWithGridArea>(({ gridArea }) => ({
+  paddingBottom: "1em",
+  gridArea,
+  width: "min-content"
+}));
 
 export const FormFieldset = styled.fieldset`
   text-align: left;
@@ -41,6 +44,7 @@ export const FormInput = styled.input`
 
 export const FormOutput = styled.output`
   display: block;
+  word-wrap: break-word;
 `;
 
 export const SubmitButton = styled.button`

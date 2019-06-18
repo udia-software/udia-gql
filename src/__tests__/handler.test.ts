@@ -1,29 +1,33 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult, Callback, Context } from "aws-lambda";
+import {
+  APIGatewayProxyEvent,
+  APIGatewayProxyResult,
+  Callback,
+  Context
+} from "aws-lambda";
 import { graphql, hello } from "../handler";
 
 describe("handler.ts", () => {
-
   // Stub event object
   const event: APIGatewayProxyEvent = {
     headers: {
-      "Host": "localhost:3000",
-      "Connection": "keep-alive",
+      Host: "localhost:3000",
+      Connection: "keep-alive",
       "Cache-Control": "max-age=0",
       "Upgrade-Insecure-Requests": "1",
       "User-Agent": "Test Stub Agent",
-      "DNT": "1",
-      "Accept": "*/*",
+      DNT: "1",
+      Accept: "*/*",
       "Accept-Encoding": "gzip, deflate, br",
-      "Accept-Language": "en-CA,en-GB;q=0.9,en-US;q=0.8,en;q=0.7",
+      "Accept-Language": "en-CA,en-GB;q=0.9,en-US;q=0.8,en;q=0.7"
     },
     multiValueHeaders: {
-      "Host": ["localhost:3000"],
-      "Connection": ["keep-alive"],
+      Host: ["localhost:3000"],
+      Connection: ["keep-alive"],
       "Cache-Control": ["max-age=0"],
       "Upgrade-Insecure-Requests": ["1"],
       "User-Agent": ["Test Stub Agent"],
       "Accept-Encoding": ["gzip, deflate, br"],
-      "Accept-Language": ["en-CA,en-GB;q=0.9,en-US;q=0.8,en;q=0.7"],
+      "Accept-Language": ["en-CA,en-GB;q=0.9,en-US;q=0.8,en;q=0.7"]
     },
     path: "/hello",
     pathParameters: null,
@@ -41,7 +45,8 @@ describe("handler.ts", () => {
         apiKey: "offlineContext_apiKey",
         sourceIp: "127.0.0.1",
         cognitoAuthenticationType: "offlineContext_cognitoAuthenticationType",
-        cognitoAuthenticationProvider: "offlineContext_cognitoAuthenticationProvider",
+        cognitoAuthenticationProvider:
+          "offlineContext_cognitoAuthenticationProvider",
         userArn: "offlineContext_userArn",
         userAgent: "Test Stub Agent",
         user: "offlineContext_user",
@@ -83,10 +88,14 @@ describe("handler.ts", () => {
     const cb: Callback<APIGatewayProxyResult> = (error, data) => {
       expect(error).toBeFalsy();
       expect(data).toHaveProperty("statusCode", 200);
-      expect(data).toHaveProperty("body", JSON.stringify({
-        message: "TypeScript function executed successfully!",
-        event, context
-      }));
+      expect(data).toHaveProperty(
+        "body",
+        JSON.stringify({
+          message: "TypeScript function executed successfully!",
+          event,
+          context
+        })
+      );
       done();
     };
     hello(event, context, cb);
@@ -101,7 +110,10 @@ describe("handler.ts", () => {
     const cb: Callback<APIGatewayProxyResult> = (error, data) => {
       expect(error).toBeFalsy();
       expect(data).toHaveProperty("statusCode", 200);
-      expect(data).toHaveProperty("body", "{\"data\":{\"hello\":\"Hello world!\"}}\n");
+      expect(data).toHaveProperty(
+        "body",
+        "{\"data\":{\"hello\":\"Hello world!\"}}\n"
+      );
       done();
     };
     graphql(gqlEvent, context, cb);

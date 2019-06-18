@@ -1,5 +1,4 @@
 import React, { Component, FormEventHandler } from "react";
-import { Cookies, withCookies } from "react-cookie";
 import { Helmet } from "react-helmet-async";
 import { connect } from "react-redux";
 import { Redirect } from "react-router";
@@ -11,16 +10,24 @@ import {
   setUserId,
   setUserName
 } from "../../modules/configureReduxStore";
+import { LocalForageContext } from "../../modules/localForageContext";
+import { LoadingOverlay } from "../composite/loadingOverlay";
 import {
   Form,
   FormFieldset,
   FormLegend,
+  FormOutput,
   SubmitButton
 } from "../static/formHelpers";
 import { Center, H1 } from "../static/themedHelpers";
 
+interface IState {
+  isLoading: boolean;
+  loadingText: string;
+  errorMessage: string;
+}
+
 interface IProps {
-  cookies: Cookies;
   NODE_ENV: string;
   userid?: string;
   username?: string;
@@ -28,15 +35,26 @@ interface IProps {
   clearName: () => ISetUserNameAction;
 }
 
-class SignOutController extends Component<IProps> {
+class SignOutController extends Component<IProps, IState> {
+  public static contextType = LocalForageContext;
+  public context!: React.ContextType<typeof LocalForageContext>;
+
   private isRedirecting: boolean;
+
   constructor(props: IProps) {
     super(props);
+    this.state = {
+      isLoading: false,
+      loadingText: "",
+      errorMessage: ""
+    };
     this.isRedirecting = false;
   }
 
   public render() {
     const { userid, username } = this.props;
+    const { isLoading, loadingText, errorMessage } = this.state;
+
     if (!userid) {
       if (!this.isRedirecting) {
         this.isRedirecting = true;
@@ -45,15 +63,26 @@ class SignOutController extends Component<IProps> {
     }
 
     return (
-      <Center>
+      <Center gridTemplateAreas={`"title" "form" "links"`}>
+        <LoadingOverlay
+          gridArea={"form"}
+          loading={isLoading}
+          loadingText={loadingText}
+        />
         <Helmet>
           <title>Sign Out - UDIA</title>
           <meta name="description" content="Sign out of UDIA, User." />
         </Helmet>
-        <H1>Sign Out</H1>
-        <Form autoComplete="off" method="post" onSubmit={this.handleSubmit}>
+        <H1 gridArea={"title"}>Sign Out</H1>
+        <Form
+          gridArea={"form"}
+          autoComplete="off"
+          method="post"
+          onSubmit={this.handleSubmit}
+        >
           <FormFieldset>
             <FormLegend>Leaving, {username ? username : "User"}?</FormLegend>
+            {!!errorMessage && <FormOutput>{errorMessage}</FormOutput>}
             <SubmitButton type="submit" children={"Sign Out"} />
           </FormFieldset>
         </Form>
@@ -61,14 +90,39 @@ class SignOutController extends Component<IProps> {
     );
   }
 
-  protected handleSubmit: FormEventHandler<HTMLFormElement> = e => {
+  protected handleSubmit: FormEventHandler<HTMLFormElement> = async e => {
     e.preventDefault();
-    const { cookies, NODE_ENV, logout, clearName } = this.props;
-    cookies.remove("jwt", {
-      path: "/", secure: NODE_ENV === "production", sameSite: true
-    });
-    clearName();
-    logout();
+    const { logout, clearName } = this.props;
+    this.setState(() => ({
+      isLoading: true,
+      loadingText: "Clearing authentication token...",
+      errorMessage: ""
+    }));
+    let logoutOk: boolean = false;
+    try {
+      const response = await fetch("/resource/jwt", {
+        method: "POST",
+        mode: "same-origin",
+        cache: "no-cache",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        redirect: "follow",
+        body: JSON.stringify({})
+      });
+      const { authenticated } = await response.json();
+      logoutOk = !authenticated;
+    } catch (err) {
+      this.setState(() => ({
+        errorMessage: err.toString()
+      }));
+    } finally {
+      this.setState(() => ({ isLoading: false }));
+      if (logoutOk) {
+        await this.context.clear();
+        clearName();
+        logout();
+      }
+    }
   };
 }
 
@@ -86,4 +140,4 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 export const SignOut = connect(
   mapStateToProps,
   mapDispatchToProps
-)(withCookies(SignOutController));
+)(SignOutController);

@@ -8,6 +8,8 @@ const TypeUser = `type User {
   username: String!
   pwFunc: String!
   pwFuncOptions: PwFuncOptions!
+  signKeyPayload: CryptoKey!
+  encryptKeyPayload: CryptoKey!
   createdAt: Long!
 }`;
 export interface IUser {
@@ -15,10 +17,16 @@ export interface IUser {
   username: string;
   pwFunc: string;
   pwFuncOptions: IPwFuncOptions;
+  signKeyPayload: ICryptoKey;
+  encryptKeyPayload: ICryptoKey;
   createdAt: number;
 }
 
 const InputEncryptedPayload = `input EncryptedPayloadInput {
+  enc: String!
+  nonce: String!
+}`;
+const TypeEncryptedPayload = `type EncryptedPayload {
   enc: String!
   nonce: String!
 }`;
@@ -30,6 +38,10 @@ export interface IEncryptedPayload {
 const InputCryptoKey = `input CryptoKeyInput {
   publicKey: String!
   encKeyPayload: EncryptedPayloadInput!
+}`;
+const TypeCryptoKey = `type CryptoKey {
+  publicKey: String!
+  encKeyPayload: EncryptedPayload!
 }`;
 export interface ICryptoKey {
   publicKey: string;
@@ -125,7 +137,9 @@ const Scalars = `scalar Long`;
 // Construct a schema, using GraphQL schema language
 const gqlTypes: ReadonlyArray<string> = [
   TypeUser,
+  TypeEncryptedPayload,
   InputEncryptedPayload,
+  TypeCryptoKey,
   InputCryptoKey,
   InputCreateUser,
   InputSignInUser,

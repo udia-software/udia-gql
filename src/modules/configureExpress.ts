@@ -1,3 +1,5 @@
+import bodyParser from "body-parser";
+import compression from "compression";
 import express from "express";
 import { createReadStream } from "fs";
 import { join } from "path";
@@ -20,6 +22,7 @@ import { IRootState, rootReducer } from "./configureReduxStore";
 
 const PUBLIC_PATH_DIR = join(__dirname, "..", "public");
 export const app = express();
+app.use(compression());
 
 // Application Meta
 app.disable("x-powered-by");
@@ -43,6 +46,31 @@ app.use(
 );
 
 app.use(cookiesMiddleware());
+const JWT_COOKIE_OPTS = {
+  path: "/",
+  secure: NODE_ENV === "production",
+  sameSite: true,
+  httpOnly: true
+};
+
+// handle httpOnly cookies for jwt callback
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.post("/resource/jwt", async (req, res) => {
+  const cookies: Cookies = (req as any).universalCookies;
+  const jwt: string | undefined = req.body.jwt;
+  let uuid: string | undefined;
+  if (jwt) {
+    uuid = Auth.verifyUserJWT(jwt).uuid;
+  }
+  if (uuid) {
+    cookies.set("jwt", jwt, JWT_COOKIE_OPTS);
+  } else {
+    cookies.remove("jwt", JWT_COOKIE_OPTS);
+  }
+  res.json({ authenticated: !!uuid });
+});
+
 app.get("/*", async (req, res) => {
   res.type("html");
 
@@ -57,18 +85,14 @@ app.get("/*", async (req, res) => {
     const { uuid } = Auth.verifyUserJWT(jwt);
     if (uuid) {
       // get the username
-      const username = await UserManager.getUsername(uuid);
+      const { username } = await UserManager.seedCookiePayload(uuid);
       // re-create the store with preloaded user data
       reduxState.userUniversal.userId = uuid;
       reduxState.userUniversal.username = username;
       store = createStore(rootReducer, reduxState);
     } else {
       // invalid JWT supplied, clear it
-      cookies.remove("jwt", {
-        path: "/",
-        secure: NODE_ENV === "production",
-        sameSite: true
-      });
+      cookies.remove("jwt", JWT_COOKIE_OPTS);
     }
   }
 

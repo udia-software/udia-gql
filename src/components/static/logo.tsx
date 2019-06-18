@@ -4,11 +4,23 @@ import styled from "./appStyles";
 interface ILogoProps {
   width?: number;
   height?: number;
+  isLoading?: boolean;
 }
 
-const StyledSVG = styled.svg.attrs<ILogoProps>({})`
+const StyledSVG = styled.svg`
   fill: ${({ theme }) => theme.primaryColor};
   color: ${({ theme }) => theme.primaryColor};
+  & > .loader-slash {
+    animation: ${({ theme }) => theme.pulse} 2s ease-in-out infinite;
+  }
+  & > .loader-bracket {
+    animation: ${({ theme }) => theme.pulse} 2s ease-in-out infinite;
+    animation-delay: -0.1s;
+  }
+  & > .loader-hexagon {
+    animation: ${({ theme }) => theme.pulse} 2s ease-in-out infinite;
+    animation-delay: -0.2s;
+  }
 `;
 
 const LEFT_BRACKET_POLY = [
@@ -59,17 +71,33 @@ const HEXAGON_PATH = [
 ].join("");
 
 const Logo = (props: ILogoProps) => {
-  const base = [ 114 ]; // minimum height is 114 px;
-  const { width, height } = props;
-  if (width) { base.push(width); }
-  if (height) { base.push(height); }
+  const base = [50]; // minimum height is 114 px;
+  const { width, height, isLoading } = props;
+  if (width) {
+    base.push(width);
+  }
+  if (height) {
+    base.push(height);
+  }
   const side = Math.max(...base);
   return (
     <StyledSVG width={side} height={side} viewBox="0 0 90 90" x="0" y="0">
-      <polygon points={LEFT_BRACKET_POLY} />
-      <polygon points={SLASH_POLY} />
-      <polygon points={RIGHT_BRACKET_POLY} />
-      <path d={HEXAGON_PATH} />
+      <polygon
+        className={isLoading ? "loader-bracket" : undefined}
+        points={LEFT_BRACKET_POLY}
+      />
+      <polygon
+        className={isLoading ? "loader-slash" : undefined}
+        points={SLASH_POLY}
+      />
+      <polygon
+        className={isLoading ? "loader-bracket" : undefined}
+        points={RIGHT_BRACKET_POLY}
+      />
+      <path
+        className={isLoading ? "loader-hexagon" : undefined}
+        d={HEXAGON_PATH}
+      />
     </StyledSVG>
   );
 };
