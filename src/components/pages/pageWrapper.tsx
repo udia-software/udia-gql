@@ -7,18 +7,32 @@ import { Footer } from "../footer";
 import { Header } from "../header";
 import styled from "../static/appStyles";
 
+// grid caused errors with content x-axis overflow
+// const ElemPageWrapper = styled.div`
+//   display: grid;
+//   grid-template-areas:
+//     "header"
+//     "content"
+//     "footer";
+//   grid-template-columns: auto;
+//   grid-template-rows: auto 1fr auto;
+//   width: 100%;
+//   min-height: 100vh;
+// `;
+
 const ElemPageWrapper = styled.div`
-  display: grid;
-  grid: auto 1fr auto / 1fr;
-  grid-template-areas:
-    "header"
-    "content"
-    "footer";
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  align-content: stretch;
   min-height: 100vh;
 `;
+
 const Content = styled.div`
-  grid-area: content;
+  min-height: 88vh;
+  width: 100%;
+  max-width: 100%;
 `;
 const PageWrapper = (props: {
   children: React.ReactNode | React.ReactNodeArray;

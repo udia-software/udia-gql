@@ -14,7 +14,7 @@ import { createStore } from "redux";
 import { StreamInjector } from "stream-inject";
 import { ServerStyleSheet } from "styled-components";
 import cookiesMiddleware from "universal-cookie-express";
-import { ApplicationLayout } from "../components/layout";
+import { UniversalApplication } from "../components/app";
 import { NODE_ENV } from "../constants";
 import UserManager from "../managers/userManager";
 import Auth from "./auth";
@@ -100,7 +100,7 @@ app.get("/*", async (req, res) => {
   const helmetContext: FilledContext | {} = {};
 
   // Construct JSX (No shorthand)
-  const appLayout = createElement(ApplicationLayout);
+  const appLayout = createElement(UniversalApplication);
   const withCookies = createElement(CookiesProvider, { cookies }, appLayout);
   const withRouter = createElement(
     StaticRouter,

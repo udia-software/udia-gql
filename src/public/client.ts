@@ -6,7 +6,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { Provider as ReduxProvider } from "react-redux";
 import { BrowserRouter } from "react-router-dom";
 import { createStore, StoreEnhancer } from "redux";
-import { ApplicationLayout } from "../components/layout";
+import { UniversalApplication } from "../components/app";
 import { rootReducer } from "../modules/configureReduxStore";
 
 interface IAugmentedWindow extends Window {
@@ -23,7 +23,7 @@ if ((module as any).hot) {
 const preloadedState = window.__PRELOADED_REDUX_DATA__;
 const store = createStore(rootReducer, preloadedState);
 const appDom = document.getElementById("root");
-const appLayout = createElement(ApplicationLayout);
+const appLayout = createElement(UniversalApplication);
 const withCookies = createElement(CookiesProvider, undefined, appLayout);
 const withRouter = createElement(BrowserRouter, undefined, withCookies);
 const withRedux = createElement(ReduxProvider, { store }, withRouter);

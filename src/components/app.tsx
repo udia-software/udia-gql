@@ -13,6 +13,7 @@ import { CSSTransition, TransitionGroup } from "react-transition-group";
 import { gqlClient } from "../modules/gqlClient";
 import { About } from "./pages/about";
 import { Contact } from "./pages/contact";
+import { Create } from "./pages/create";
 import { Home } from "./pages/home";
 import { LogIn } from "./pages/logIn";
 import { NotFound } from "./pages/notFound";
@@ -36,10 +37,7 @@ interface IState {
   theme: IThemeInterface;
 }
 
-class ApplicationLayout extends React.PureComponent<
-  RouteComponentProps,
-  IState
-> {
+class UniversalApp extends React.PureComponent<RouteComponentProps, IState> {
   constructor(props: RouteComponentProps) {
     super(props);
     this.state = {
@@ -78,6 +76,7 @@ class ApplicationLayout extends React.PureComponent<
                       <Route path="/sign-up" exact component={SignUp} />
                       <Route path="/log-in" exact component={LogIn} />
                       <Route path="/sign-out" exact component={SignOut} />
+                      <Route path="/create" exact component={Create} />
                       <Route component={NotFound} />
                     </Switch>
                   </CSSTransition>
@@ -99,7 +98,6 @@ class ApplicationLayout extends React.PureComponent<
 
 // connect with Router for reloading on location change
 const mapStateToProps = () => ({});
-const ConnectedApplicationLayout = withRouter(
-  connect(mapStateToProps)(ApplicationLayout)
+export const UniversalApplication = withRouter(
+  connect(mapStateToProps)(UniversalApp)
 );
-export { ConnectedApplicationLayout as ApplicationLayout };

@@ -54,3 +54,19 @@ export const RedIcon = styled(FontAwesomeIcon)(({ theme }) => ({
 export const YellowIcon = styled(FontAwesomeIcon)(({ theme }) => ({
   color: theme.yellow
 }));
+
+// Wrapping preformat code blocks
+export const Pre = styled.pre`
+white-space: pre-wrap;       /* css-3 */
+white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+white-space: -pre-wrap;      /* Opera 4-6 */
+white-space: -o-pre-wrap;    /* Opera 7 */
+word-wrap: break-word;       /* Internet Explorer 5.5+ */
+`;
+
+// Extending Katex block display mode
+export const KatexBlock = styled.span`
+.katex-display > .katex {
+  overflow-x: visible;
+  overflow-y: hidden;
+}`;

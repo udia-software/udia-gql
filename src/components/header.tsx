@@ -6,11 +6,11 @@ import styled from "./static/appStyles";
 
 const HeaderContainer = styled.div`
   max-width: 100%;
+  width: 100%;
   grid-area: header;
   display: grid;
   grid-template-columns: auto 1fr;
   grid-auto-flow: column;
-  padding: 0.1em 0.2em;
 `;
 const HeaderRightContainer = styled.div`
   display: grid;
@@ -70,13 +70,14 @@ const HeaderComp = (props: IProps) => (
     </TNavLink>
     {!props.userId && (
       <HeaderRightContainer>
-        {/* <ENavLink to="/about">About</ENavLink> */}
+        <ENavLink to="/create">Create</ENavLink>
         <ENavLink to="/sign-up">Sign Up</ENavLink>
         <ENavLink to="/log-in">Log In</ENavLink>
       </HeaderRightContainer>
     )}
     {props.userId && (
       <HeaderRightContainer>
+        <ENavLink to="/create">Create</ENavLink>
         <ENavLink to="/sign-out">
           {!!props.username ? props.username : "Sign Out"}
         </ENavLink>

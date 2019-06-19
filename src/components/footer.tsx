@@ -6,18 +6,18 @@ import { A, H3 } from "./static/themedHelpers";
 
 const FooterContainer = styled.div`
   max-width: 100%;
+  width: 100%;
   grid-area: footer;
   display: grid;
-  padding: 0.2em;
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: auto;
   grid-auto-flow: row dense;
+  align-self: flex-end;
   @media screen and (max-width: 533px) {
     grid-template-columns: 1fr;
   }
 `;
 const ContactBlock = styled.div`
-  padding: 0.4em;
   align-self: start;
   justify-self: start;
 `;
@@ -27,7 +27,6 @@ const LogoBlock = styled.div`
 `;
 const LinksBlock = styled.div`
   text-align: right;
-  padding: 0.4em;
   align-self: start;
   justify-self: end;
 `;

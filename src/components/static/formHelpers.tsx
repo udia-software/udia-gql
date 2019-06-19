@@ -81,3 +81,10 @@ export const CenteredListItem = styled.li`
   justify-content: space-between;
   padding: 0 0.2em;
 `;
+
+export const TextArea = styled.textarea`
+  min-width: 100%;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+`;

@@ -111,6 +111,14 @@ class SignOutController extends Component<IProps, IState> {
       });
       const { authenticated } = await response.json();
       logoutOk = !authenticated;
+      if (!logoutOk) {
+        throw new Error("Failed to remove persistence token");
+      }
+      this.setState(() => ({
+        loadingText: "Logging out...",
+      }));
+      await this.context.clear();
+      clearName();
     } catch (err) {
       this.setState(() => ({
         errorMessage: err.toString()
@@ -118,8 +126,6 @@ class SignOutController extends Component<IProps, IState> {
     } finally {
       this.setState(() => ({ isLoading: false }));
       if (logoutOk) {
-        await this.context.clear();
-        clearName();
         logout();
       }
     }
