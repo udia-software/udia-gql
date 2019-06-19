@@ -237,9 +237,9 @@ This paragraph has some \`code\` in it.
 
 
 
-![Alt Text](http://placehold.it/200x50 "Image Title")
+![Alt Text](https://placehold.it/200x50 "Image Title")
 
-    ![Alt Text](http://placehold.it/200x50 "Image Title")`;
+    ![Alt Text](https://placehold.it/200x50 "Image Title")`;
 
 interface IState {
   content: string;
@@ -276,4 +276,3 @@ class CreateController extends Component<{}, IState> {
 }
 
 export { CreateController as Create };
-
