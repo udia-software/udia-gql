@@ -40,7 +40,9 @@ export const Center = styled.div<{ gridTemplateAreas?: string }>(
     gridTemplateAreas,
     placeContent: "center",
     placeItems: "center",
-    textAlign: "center"
+    textAlign: "center",
+    alignSelf: "center",
+    justifySelf: "center"
   })
 );
 
@@ -69,4 +71,7 @@ export const KatexBlock = styled.span`
 .katex-display > .katex {
   overflow-x: visible;
   overflow-y: hidden;
-}`;
+  scrollbar-color: ${({ theme }) => theme.purple + " " + theme.green};
+  scrollbar-width: thin;
+}
+`;

@@ -1,5 +1,6 @@
 import React, { ChangeEventHandler, Component } from "react";
 import { MarkdownRenderer } from "../composite/markdownRenderer";
+import styled from "../static/appStyles";
 import { TextArea } from "../static/formHelpers";
 
 const STUB = `
@@ -244,6 +245,12 @@ interface IState {
   content: string;
 }
 
+const CreateContainer = styled.div`
+  display: block;
+  width: 100%;
+  max-width: 100%;
+`;
+
 class CreateController extends Component<{}, IState> {
   constructor(props: {}) {
     super(props);
@@ -255,10 +262,10 @@ class CreateController extends Component<{}, IState> {
   public render() {
     const { content } = this.state;
     return (
-      <div>
+      <CreateContainer>
         <TextArea value={content} onChange={this.handleChange} />
         <MarkdownRenderer value={content} />
-      </div>
+      </CreateContainer>
     );
   }
 
@@ -269,3 +276,4 @@ class CreateController extends Component<{}, IState> {
 }
 
 export { CreateController as Create };
+

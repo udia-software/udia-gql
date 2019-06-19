@@ -30,7 +30,8 @@ const ElemPageWrapper = styled.div`
 `;
 
 const Content = styled.div`
-  min-height: 88vh;
+  flex: 1 1 auto;
+  display: flex;
   width: 100%;
   max-width: 100%;
 `;
