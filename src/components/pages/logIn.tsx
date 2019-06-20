@@ -286,14 +286,13 @@ class LogInController extends Component<IProp, IState> {
       this.setState(() => ({
         loadingText: "Deriving cryptographic keys..."
       }));
-      const { pw, ek } = await Crypt.deriveMasterKeys(
+      const { pw, ek, ak } = await Crypt.deriveMasterKeys(
         username,
         password,
         nonce,
         cost
       );
 
-      // todo CRYPTO KEYS
       this.setState(() => ({
         loadingText: "Fetching authentication token..."
       }));
@@ -308,15 +307,21 @@ class LogInController extends Component<IProp, IState> {
                 signKeyPayload {
                   publicKey
                   encKeyPayload {
-                    enc
-                    nonce
+                    type
+                    version
+                    auth
+                    iv
+                    cipherText
                   }
                 }
                 encryptKeyPayload {
                   publicKey
                   encKeyPayload {
-                    enc
-                    nonce
+                    type
+                    version
+                    auth
+                    iv
+                    cipherText
                   }
                 }
               }
@@ -332,32 +337,26 @@ class LogInController extends Component<IProp, IState> {
       this.setState(() => ({
         loadingText: "Decrypting item keys..."
       }));
-      const {
-        enc: signEnc,
-        nonce: signNonce
-      } = user.signKeyPayload.encKeyPayload;
       const secretSignKey = Crypt.symmetricDecrypt(
-        signEnc,
-        signNonce,
-        ek
+        user.signKeyPayload.encKeyPayload,
+        ek,
+        ak
       ) as string;
       const signKeyPair: ISignKeyPair = {
-        publicSignKey: user.signKeyPayload.publicKey,
-        secretSignKey
+        type: "SIGN",
+        publicKey: user.signKeyPayload.publicKey,
+        secretKey: secretSignKey
       };
       await this.context.setItem("signKeyPair", signKeyPair);
-      const {
-        enc: encryptEnc,
-        nonce: encryptNonce
-      } = user.encryptKeyPayload.encKeyPayload;
       const secretEncKey = Crypt.symmetricDecrypt(
-        encryptEnc,
-        encryptNonce,
-        ek
+        user.encryptKeyPayload.encKeyPayload,
+        ek,
+        ak
       ) as string;
       const encryptKeyPair: IEncryptKeyPair = {
-        publicEncKey: user.encryptKeyPayload.publicKey,
-        secretEncKey
+        type: "ENCRYPT",
+        publicKey: user.encryptKeyPayload.publicKey,
+        secretKey: secretEncKey
       };
       await this.context.setItem("encryptKeyPair", encryptKeyPair);
 

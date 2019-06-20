@@ -1,4 +1,5 @@
 import { gql } from "apollo-server-lambda";
+import { ICryptPayload } from "../modules/crypt";
 
 /**
  * GraphQL type for User and Typescript interface for User
@@ -22,30 +23,32 @@ export interface IUser {
   createdAt: number;
 }
 
-const InputEncryptedPayload = `input EncryptedPayloadInput {
-  enc: String!
-  nonce: String!
+const InputCryptPayload = `input CryptPayloadInput {
+  type: String!
+  version: String!
+  auth: String!
+  iv: String!
+  cipherText: String!
 }`;
-const TypeEncryptedPayload = `type EncryptedPayload {
-  enc: String!
-  nonce: String!
+const TypeCryptPayload = `type CryptPayload {
+  type: String!
+  version: String!
+  auth: String!
+  iv: String!
+  cipherText: String!
 }`;
-export interface IEncryptedPayload {
-  enc: string;
-  nonce: string;
-}
 
 const InputCryptoKey = `input CryptoKeyInput {
   publicKey: String!
-  encKeyPayload: EncryptedPayloadInput!
+  encKeyPayload: CryptPayloadInput!
 }`;
 const TypeCryptoKey = `type CryptoKey {
   publicKey: String!
-  encKeyPayload: EncryptedPayload!
+  encKeyPayload: CryptPayload!
 }`;
 export interface ICryptoKey {
   publicKey: string;
-  encKeyPayload: IEncryptedPayload;
+  encKeyPayload: ICryptPayload;
 }
 
 /**
@@ -137,8 +140,8 @@ const Scalars = `scalar Long`;
 // Construct a schema, using GraphQL schema language
 const gqlTypes: ReadonlyArray<string> = [
   TypeUser,
-  TypeEncryptedPayload,
-  InputEncryptedPayload,
+  TypeCryptPayload,
+  InputCryptPayload,
   TypeCryptoKey,
   InputCryptoKey,
   InputCreateUser,

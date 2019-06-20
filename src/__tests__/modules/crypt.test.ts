@@ -2,13 +2,11 @@ import Crypt from "../../modules/crypt";
 
 describe("modules/crypt.ts", () => {
   // password for server authentication
-  const pw = "MeZZOxsAeSiAfR9cwLi36SrjS7gypsBL8yNnvbWi9kA=";
+  const pw = "c+pp+WKUsXgVonq85W6pv2YzoAXL4tgjNZp9774hpNo=";
   // private key for symmetric & asymmetric encryption
-  const ek = "m87aGxICnTq4KlM0rk/w/HcfICjAnuV1njNpsPcaRZA=";
+  const ek = "XRGuqEfc8Ewwgrao7Zh0QMn9pajCbrIZuN4/gZvqY+8=";
   // deterministic secret key for encrypting signing key pair
-  const sk = "iQgTwA+LhlnBpUj2nCCneeTFEFa8k0AqRS0cTyi00Vs=";
-  // public key derived from private key
-  const pEk = "8pOyYKjCm2PDfcoE2PRFb8ZBY1KpLOgMyaYAiCuxUx4=";
+  const ak = "lkqy+hjuPJeKNraFq77u9QDdbXxdirQgpwDE1RVbrZo=";
 
   it("should derive master keys consistently", async () => {
     expect.assertions(1);
@@ -17,67 +15,82 @@ describe("modules/crypt.ts", () => {
     const nonce = "PseudoRandomBase64String";
     const cost = 1000;
     const mkeys = await Crypt.deriveMasterKeys(username, password, nonce, cost);
-    expect(mkeys).toStrictEqual({ pw, ek, sk });
+    expect(mkeys).toStrictEqual({ pw, ek, ak });
   });
 
   it("should symmetric encrypt/decrypt consistently", () => {
-    expect.assertions(4);
     const sample = [["foo", "bar"], "abc", 123];
-    const encSample = Crypt.symmetricEncrypt(sample, ek);
-    expect(encSample).toHaveProperty("enc");
-    expect(encSample).toHaveProperty("nonce");
-    const decrypted = Crypt.symmetricDecrypt(encSample.enc, encSample.nonce, ek);
+    const encSample = Crypt.symmetricEncrypt(sample, ek, ak);
+    expect(encSample).toHaveProperty("type", "SYMMETRIC");
+    expect(encSample).toHaveProperty("version", "v1");
+    expect(encSample).toHaveProperty("auth");
+    expect(encSample).toHaveProperty("iv");
+    expect(encSample).toHaveProperty("cipherText");
+    const decrypted = Crypt.symmetricDecrypt(encSample, ek, ak);
     expect(decrypted).toStrictEqual(sample);
     // things that cannot be decrypted should throw an error
-    expect(() => Crypt.symmetricDecrypt("", encSample.nonce, ek)).toThrowError(
-      "Unable to decrypt message."
-    );
-  });
-
-  it("should generate a public key pair from a secret key", () => {
-    expect.assertions(1);
-    const pubEncKey = Crypt.derivePublicEncryptionKey(ek);
-    expect(pubEncKey).toBe(pEk);
+    expect(() =>
+      Crypt.symmetricDecrypt({ ...encSample, auth: "bad" }, ek, ak)
+    ).toThrowError("AuthHash mismatch, payload invalid");
   });
 
   it("should generate usable encryption key pair", () => {
-    expect.assertions(9);
     const encKeyPairAlice = Crypt.generateEncryptionKeyPair();
-    expect(encKeyPairAlice).toHaveProperty("publicEncKey");
-    expect(encKeyPairAlice).toHaveProperty("secretEncKey");
+    expect(encKeyPairAlice).toHaveProperty("type", "ENCRYPT");
+    expect(encKeyPairAlice).toHaveProperty("publicKey");
+    expect(encKeyPairAlice).toHaveProperty("secretKey");
+    const signKeyPairAlice = Crypt.generateSigningKeyPair();
+    expect(signKeyPairAlice).toHaveProperty("type", "SIGN");
+    expect(signKeyPairAlice).toHaveProperty("publicKey");
+    expect(signKeyPairAlice).toHaveProperty("secretKey");
+
     const encKeyPairBob = Crypt.generateEncryptionKeyPair();
-    expect(encKeyPairBob).toHaveProperty("publicEncKey");
-    expect(encKeyPairBob).toHaveProperty("secretEncKey");
+    expect(encKeyPairBob).toHaveProperty("type", "ENCRYPT");
+    expect(encKeyPairBob).toHaveProperty("publicKey");
+    expect(encKeyPairBob).toHaveProperty("secretKey");
     const sample = ["bar", ["foo", 123], "abc"];
-    const encSample = Crypt.asymmetricEncrypt(sample, encKeyPairBob.publicEncKey, encKeyPairAlice.secretEncKey);
-    expect(encSample).toHaveProperty("enc");
-    expect(encSample).toHaveProperty("nonce");
+    const encSample = Crypt.asymmetricEncrypt(
+      sample,
+      encKeyPairBob.publicKey,
+      encKeyPairAlice,
+      signKeyPairAlice
+    );
+    expect(encSample).toHaveProperty("type", "ASYMMETRIC");
+    expect(encSample).toHaveProperty("version", "v1");
+    expect(encSample).toHaveProperty("auth");
+    expect(encSample).toHaveProperty("iv");
+    expect(encSample).toHaveProperty("cipherText");
     const decrypted = Crypt.asymmetricDecrypt(
-      encSample.enc, encSample.nonce, encKeyPairAlice.publicEncKey, encKeyPairBob.secretEncKey);
+      encSample,
+      signKeyPairAlice.publicKey,
+      encKeyPairAlice.publicKey,
+      encKeyPairBob
+    );
     expect(decrypted).toStrictEqual(sample);
-    // can reverse public and private keys, encryption still works
-    const decrupted2 = Crypt.asymmetricDecrypt(
-      encSample.enc, encSample.nonce, encKeyPairBob.publicEncKey, encKeyPairAlice.secretEncKey);
-    expect(decrupted2).toStrictEqual(sample);
-    expect(() => Crypt.asymmetricDecrypt(
-      "", encSample.nonce, encKeyPairBob.publicEncKey, encKeyPairAlice.secretEncKey)).toThrowError(
-        "Unable to decrypt message."
-      );
   });
 
   it("should generate usable signing key pair", () => {
-    expect.assertions(6);
     const signKeyPairAlice = Crypt.generateSigningKeyPair();
-    expect(signKeyPairAlice).toHaveProperty("publicSignKey");
-    expect(signKeyPairAlice).toHaveProperty("secretSignKey");
+    expect(signKeyPairAlice).toHaveProperty("type", "SIGN");
+    expect(signKeyPairAlice).toHaveProperty("publicKey");
+    expect(signKeyPairAlice).toHaveProperty("secretKey");
     const signKeyPairBob = Crypt.generateSigningKeyPair();
-    expect(signKeyPairBob).toHaveProperty("publicSignKey");
-    expect(signKeyPairBob).toHaveProperty("secretSignKey");
-    const sample = [ "a", 1, "b", -1, "c", 2, "d", -2 ];
-    const sig = Crypt.signMessage(sample, signKeyPairAlice.secretSignKey);
-    const sigValid = Crypt.verifySignature(sample, sig, signKeyPairAlice.publicSignKey);
+    expect(signKeyPairBob).toHaveProperty("type", "SIGN");
+    expect(signKeyPairBob).toHaveProperty("publicKey");
+    expect(signKeyPairBob).toHaveProperty("secretKey");
+    const sample = ["a", 1, "b", -1, "c", 2, "d", -2];
+    const sig = Crypt.signMessage(sample, signKeyPairAlice);
+    const sigValid = Crypt.verifySignature(
+      sample,
+      sig,
+      signKeyPairAlice.publicKey
+    );
     expect(sigValid).toBeTruthy();
-    const sigInvalid = Crypt.verifySignature(sample, sig, signKeyPairBob.publicSignKey);
+    const sigInvalid = Crypt.verifySignature(
+      sample,
+      sig,
+      signKeyPairBob.publicKey
+    );
     expect(sigInvalid).toBeFalsy();
   });
 });

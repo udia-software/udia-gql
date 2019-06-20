@@ -14,11 +14,12 @@ export const MarkdownRenderer = (props: IProps) => {
   const katexOptions: KatexOptions = {
     throwOnError: false,
     errorColor: (useContext(ThemeContext) as IThemeInterface).red,
-    displayMode: false
+    displayMode: false,
   };
 
   return (
     <ReactMarkdown
+      rawSourcePos={true}
       source={props.value}
       plugins={[RemarkMathPlugin]}
       renderers={{

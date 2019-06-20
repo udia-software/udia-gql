@@ -16,7 +16,7 @@ RUN yum install util-linux gcc gcc-c++ make nodejs -y
 
 RUN npm install -g node-gyp
 # Rebuild required native libraries
-RUN npm install argon2@^0.23.0 --no-save && cd /opt/app/node_modules/argon2 && CXX=gcc node-gyp rebuild
+RUN npm install argon2@^0.24.0 --no-save && cd /opt/app/node_modules/argon2 && CXX=gcc node-gyp rebuild
 RUN npm install bufferutil@^4.0.1 --no-save && cd /opt/app/node_modules/bufferutil && CXX=gcc node-gyp rebuild
 RUN npm install utf-8-validate@^5.0.2 --no-save && cd /opt/app/node_modules/utf-8-validate && CXX=gcc node-gyp rebuild
 
