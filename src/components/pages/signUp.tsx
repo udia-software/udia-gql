@@ -327,7 +327,7 @@ class SignUpController extends Component<IProps, IState> {
       loadingText: "Deriving cryptographic keys..."
     }));
 
-    const nonce = await Crypt.generateNonce();
+    const nonce = await Crypt.generateNonce(32);
     const pwCost = 100000;
     const pwFunc = "pbkdf2";
     const { pw, ek } = await Crypt.deriveMasterKeys(

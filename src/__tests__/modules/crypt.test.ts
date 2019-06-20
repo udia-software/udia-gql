@@ -6,7 +6,7 @@ describe("modules/crypt.ts", () => {
   // private key for symmetric & asymmetric encryption
   const ek = "m87aGxICnTq4KlM0rk/w/HcfICjAnuV1njNpsPcaRZA=";
   // deterministic secret key for encrypting signing key pair
-  const sk = "iQgTwA+LhlnBpUj2nCCneeTFEFa8k0AqRS0cTyi00Vs=";
+  const ak = "iQgTwA+LhlnBpUj2nCCneeTFEFa8k0AqRS0cTyi00Vs=";
   // public key derived from private key
   const pEk = "8pOyYKjCm2PDfcoE2PRFb8ZBY1KpLOgMyaYAiCuxUx4=";
 
@@ -17,7 +17,7 @@ describe("modules/crypt.ts", () => {
     const nonce = "PseudoRandomBase64String";
     const cost = 1000;
     const mkeys = await Crypt.deriveMasterKeys(username, password, nonce, cost);
-    expect(mkeys).toStrictEqual({ pw, ek, sk });
+    expect(mkeys).toStrictEqual({ pw, ek, ak });
   });
 
   it("should symmetric encrypt/decrypt consistently", () => {
