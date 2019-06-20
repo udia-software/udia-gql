@@ -330,7 +330,7 @@ class SignUpController extends Component<IProps, IState> {
     const nonce = await Crypt.generateNonce(32);
     const pwCost = 100000;
     const pwFunc = "pbkdf2";
-    const { pw, ek } = await Crypt.deriveMasterKeys(
+    const { pw, ek, ak } = await Crypt.deriveMasterKeys(
       username,
       password,
       nonce,
@@ -343,20 +343,20 @@ class SignUpController extends Component<IProps, IState> {
     const signKeyPair = Crypt.generateSigningKeyPair();
     const encryptKeyPair = Crypt.generateEncryptionKeyPair();
     const encSecretSignKey = Crypt.symmetricEncrypt(
-      signKeyPair.secretSignKey,
-      ek
+      signKeyPair.secretKey,
+      ek, ak
     );
     const encSecretEncKey = Crypt.symmetricEncrypt(
-      encryptKeyPair.secretEncKey,
-      ek
+      encryptKeyPair.secretKey,
+      ek, ak
     );
 
     const signKeyPayload: ICryptoKey = {
-      publicKey: signKeyPair.publicSignKey,
+      publicKey: signKeyPair.publicKey,
       encKeyPayload: encSecretSignKey
     };
     const encryptKeyPayload: ICryptoKey = {
-      publicKey: encryptKeyPair.publicEncKey,
+      publicKey: encryptKeyPair.publicKey,
       encKeyPayload: encSecretEncKey
     };
 

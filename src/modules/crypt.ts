@@ -16,7 +16,7 @@ export interface IMasterKeys {
 export interface ICryptPayload {
   type: "SYMMETRIC" | "ASYMMETRIC";
   version: string;
-  authHash: string;
+  auth: string;
   iv: string;
   cipherText: string;
 }
@@ -137,13 +137,13 @@ export default class Crypt {
     const authHashBuf = hash(bufToAuth);
 
     // serialize buffers into base64 strings
-    const authHash = Buffer.from(authHashBuf).toString("base64");
+    const auth = Buffer.from(authHashBuf).toString("base64");
     const iv = Buffer.from(ivBuf).toString("base64");
     const cipherText = Buffer.from(cipherBuf).toString("base64");
     return {
       type: "SYMMETRIC",
       version: this.VERSION,
-      authHash,
+      auth,
       iv,
       cipherText
     };
@@ -161,7 +161,7 @@ export default class Crypt {
     ak: string,
     encoding: string = "utf8"
   ): Serializable {
-    const { version, authHash, iv, cipherText } = payload;
+    const { version, auth, iv, cipherText } = payload;
     if (version !== this.VERSION) {
       throw new Error("Unsupported Crypt protocol version");
     }
@@ -172,7 +172,7 @@ export default class Crypt {
     const ivLen = 2 * secretbox.nonceLength;
     const ivEk = ivBuf.subarray(0, ivLen / 2);
     const ivAk = ivBuf.subarray(ivLen / 2, ivLen);
-    const authHashBuf = Buffer.from(authHash, "base64");
+    const authHashBuf = Buffer.from(auth, "base64");
 
     // verify the auth hash is correct
     const bufToAuth = Buffer.concat([
@@ -236,6 +236,7 @@ export default class Crypt {
     payload: Serializable,
     theirPublicEncryptKey: string,
     myEncryptKeyPair: IEncryptKeyPair,
+    mySignKeyPair: ISignKeyPair,
     encoding: string = "utf8"
   ): IAsymmetricCryptPayload {
     const msgString = JSON.stringify(payload);
@@ -253,23 +254,23 @@ export default class Crypt {
     const cipherBuf = box(msgBuffer, ivEk, theirPublicKey, secretKey);
 
     // generate the item auth string and hash
-    const bufToAuth = Buffer.concat([
+    const bufToSign = Buffer.concat([
       Buffer.from(this.VERSION),
       Buffer.from(ivAk),
       Buffer.from(cipherBuf),
       theirPublicKey,
       publicKey
     ]);
-    const authHashBuf = hash(bufToAuth);
+    const stringToSign = bufToSign.toString("base64");
+    const auth = this.signMessage(stringToSign, mySignKeyPair);
 
     // serialize buffers into base64 strings
-    const authHash = Buffer.from(authHashBuf).toString("base64");
     const iv = Buffer.from(ivBuf).toString("base64");
     const cipherText = Buffer.from(cipherBuf).toString("base64");
     return {
       type: "ASYMMETRIC",
       version: this.VERSION,
-      authHash,
+      auth,
       iv,
       cipherText
     };
@@ -284,11 +285,12 @@ export default class Crypt {
    */
   public static asymmetricDecrypt(
     payload: IAsymmetricCryptPayload,
+    theirPublicSignKey: string,
     theirPublicEncryptKey: string,
     myEncryptKeyPair: IEncryptKeyPair,
     encoding: string = "utf8"
   ): Serializable {
-    const { version, authHash, iv, cipherText } = payload;
+    const { version, auth, iv, cipherText } = payload;
     if (version !== this.VERSION) {
       throw new Error("Unsupported Crypt protocol version");
     }
@@ -300,18 +302,17 @@ export default class Crypt {
     const ivLen = 2 * box.nonceLength;
     const ivEk = ivBuf.subarray(0, ivLen / 2);
     const ivAk = ivBuf.subarray(ivLen / 2, ivLen);
-    const authHashBuf = Buffer.from(authHash, "base64");
 
     // verify the auth hash is correct
-    const bufToAuth = Buffer.concat([
+    const bufToSign = Buffer.concat([
       Buffer.from(this.VERSION),
       Buffer.from(ivAk),
       Buffer.from(cipherBuf),
       publicKey,
       theirPublicKey
     ]);
-    const localAuthHashBuf = hash(bufToAuth);
-    if (!verify(localAuthHashBuf, authHashBuf)) {
+    const stringToSign = bufToSign.toString("base64");
+    if (!this.verifySignature(stringToSign, auth, theirPublicSignKey)) {
       throw new Error("AuthHash mismatch, payload invalid");
     }
 
