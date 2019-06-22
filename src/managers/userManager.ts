@@ -62,13 +62,7 @@ interface IDynamoKey {
   uuid: string;
   type: TYPE_SIGN_KEY | TYPE_ENCRYPT_KEY;
   payloadId: string; // publicKey > uuidv5
-  payload: {
-    publicKey: string; // base64 string
-    encKeyPayload: {
-      enc: string;
-      nonce: string;
-    };
-  };
+  payload: ICryptoKey;
 }
 
 export default class UserManager {
@@ -269,7 +263,9 @@ export default class UserManager {
       } else if (projection.type === this.TYPE_SIGN_KEY) {
         signKeyPayload = projection.payload;
       } else {
-        throw new AuthenticationError(`Unexpected projection type ${projection.type}`);
+        throw new AuthenticationError(
+          `Unexpected projection type ${projection.type}`
+        );
       }
     }
 
