@@ -60,15 +60,21 @@ describe("graphql/resolvers.ts", () => {
       signKeyPayload: {
         publicKey: "stubPublicSignKey",
         encKeyPayload: {
-          enc: "stubEncSecretSignKey",
-          nonce: "stubEncSecretSignKeyNonce"
+          type: "SYMMETRIC",
+          version: "v0",
+          auth: "stubEncSecretSignAuthVal",
+          iv: "stubEncSecretSignKeyIV",
+          cipherText: "stubEncSecretSignKeyCipher"
         }
       },
       encryptKeyPayload: {
         publicKey: "stubPublicEncryptKey",
         encKeyPayload: {
-          enc: "stubEncSecretEncryptKey",
-          nonce: "stubEncSecretEncryptKeyNonce"
+          type: "SYMMETRIC",
+          version: "v0",
+          auth: "stubEncSecretEncryptAuthVal",
+          iv: "stubEncSecretEncryptKeyIV",
+          cipherText: "stubEncSecretEncryptKeyCipher"
         }
       }
     };
@@ -81,15 +87,21 @@ describe("graphql/resolvers.ts", () => {
         signKeyPayload: {
           publicKey: "stubPublicSignKey",
           encKeyPayload: {
-            enc: "stubEncSecretSignKey",
-            nonce: "stubEncSecretSignKeyNonce"
+            type: "SYMMETRIC",
+            version: "v0",
+            auth: "stubEncSecretSignAuthVal",
+            iv: "stubEncSecretSignKeyIV",
+            cipherText: "stubEncSecretSignKeyCipher"
           }
         },
         encryptKeyPayload: {
           publicKey: "stubPublicEncryptKey",
           encKeyPayload: {
-            enc: "stubEncSecretEncryptKey",
-            nonce: "stubEncSecretEncryptKeyNonce"
+            type: "SYMMETRIC",
+            version: "v0",
+            auth: "stubEncSecretEncryptAuthVal",
+            iv: "stubEncSecretEncryptKeyIV",
+            cipherText: "stubEncSecretEncryptKeyCipher"
           }
         }
       };
