@@ -8,7 +8,7 @@
         "arrow-parens": false,
         "object-literal-sort-keys": false,
         "object-literal-key-quotes": [true, "as-needed"],
-        "no-implicit-dependencies": true,
+        "no-implicit-dependencies": [true, ["unist"]],
         "semicolon": [true, "always", "ignore-bound-class-methods"],
         "trailing-comma": false,
         "quotemark": true

@@ -1,6 +1,6 @@
 import React, { ChangeEventHandler, Component, RefObject, UIEventHandler } from "react";
 import { STUB } from "../../constants";
-import { MarkdownRenderer } from "../composite/markdownRenderer";
+import { ASTOutput } from "../composite/ast/astOutput";
 import styled from "../static/appStyles";
 
 const CreateContainer = styled.div`
@@ -38,6 +38,7 @@ const TextArea = styled.textarea`
 
 interface IState {
   content: string;
+  cursor?: number;
 }
 
 class EditorController extends Component<{}, IState> {
@@ -51,11 +52,11 @@ class EditorController extends Component<{}, IState> {
   }
 
   public render() {
-    const { content } = this.state;
+    const { content, cursor } = this.state;
     return (
       <CreateContainer>
         <PreviewContainer>
-          <MarkdownRenderer value={content} />
+          <ASTOutput source={content} cursor={cursor} />
         </PreviewContainer>
         <TextArea
           value={content}
@@ -79,8 +80,7 @@ class EditorController extends Component<{}, IState> {
         behavior: "auto"
       });
       const { selectionStart, selectionEnd } = e.currentTarget;
-      // tslint:disable-next-line: no-console
-      console.log("cur start: ", selectionStart, " | cur end: ", selectionEnd);
+      this.setState(() => ({ cursor: selectionStart }));
     } else {
       // tslint:disable-next-line:no-console
       console.error("missing target/ref");

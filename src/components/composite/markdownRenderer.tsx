@@ -19,7 +19,6 @@ export const MarkdownRenderer = (props: IProps) => {
 
   return (
     <ReactMarkdown
-      rawSourcePos={true}
       source={props.value}
       plugins={[RemarkMathPlugin]}
       renderers={{
