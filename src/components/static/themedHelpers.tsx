@@ -65,13 +65,3 @@ white-space: -pre-wrap;      /* Opera 4-6 */
 white-space: -o-pre-wrap;    /* Opera 7 */
 word-wrap: break-word;       /* Internet Explorer 5.5+ */
 `;
-
-// Extending Katex block display mode
-export const KatexBlock = styled.span`
-.katex-display > .katex {
-  overflow-x: visible;
-  overflow-y: hidden;
-  scrollbar-color: ${({ theme }) => theme.purple + " " + theme.green};
-  scrollbar-width: thin;
-}
-`;

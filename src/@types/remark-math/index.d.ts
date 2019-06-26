@@ -3,6 +3,6 @@ declare module "remark-math" {
   export interface MathPluginOpts {
     inlineMathDouble?: boolean;
   }
-  const mathPlugin: Plugin;
-  export default mathPlugin;
+  const remarkMathPlugin: Plugin;
+  export default remarkMathPlugin;
 }

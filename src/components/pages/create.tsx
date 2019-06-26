@@ -1,4 +1,9 @@
-import React, { ChangeEventHandler, Component, RefObject, UIEventHandler } from "react";
+import React, {
+  ChangeEventHandler,
+  Component,
+  RefObject,
+  UIEventHandler
+} from "react";
 import { STUB } from "../../constants";
 import { ASTOutput } from "../composite/ast/astOutput";
 import styled from "../static/appStyles";
@@ -79,13 +84,13 @@ class EditorController extends Component<{}, IState> {
         top: e.currentTarget.scrollTop,
         behavior: "auto"
       });
-      const { selectionStart, selectionEnd } = e.currentTarget;
+      const { selectionStart } = e.currentTarget;
       this.setState(() => ({ cursor: selectionStart }));
     } else {
       // tslint:disable-next-line:no-console
       console.error("missing target/ref");
     }
-  }
+  };
 }
 
 export { EditorController as Create };
