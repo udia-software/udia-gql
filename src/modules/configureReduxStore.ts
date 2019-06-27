@@ -64,14 +64,43 @@ const userUniversalReducer = (
   }
 };
 
+/* ==== EDITOR ====
+ * Used for fancy text editor state
+ */
+export interface IEditorState {
+  cursor?: number;
+}
+const EditorState: IEditorState = {};
+
+export const SET_CURSOR = "editor/SET_CURSOR";
+export interface ISetCursorAction {
+  type: typeof SET_CURSOR;
+  payload?: number;
+}
+export const setCursor = (cursor: number | null): ISetCursorAction => ({
+  type: SET_CURSOR,
+  payload: cursor === null ? undefined : cursor
+});
+
+const editorReducer = (state = EditorState, action: ISetCursorAction) => {
+  switch (action.type) {
+    case SET_CURSOR:
+      return { ...state, cursor: action.payload };
+    default:
+      return { ...state };
+  }
+};
+
 /* ==== ROOT REDUCER ====
  * Combine all sub reducers and make the root reducer
  */
 export interface IRootState {
   environment: ISharedEnvironment;
   userUniversal: IUserUniversalData;
+  editor: IEditorState;
 }
 export const rootReducer = combineReducers({
   environment: environmentReducer,
-  userUniversal: userUniversalReducer
+  userUniversal: userUniversalReducer,
+  editor: editorReducer
 });

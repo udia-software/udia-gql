@@ -3,6 +3,7 @@ import { createElement } from "react";
 import { Attacher } from "unified";
 import { Node } from "unist";
 import visit from "unist-util-visit-parents";
+import { Element } from "../../components/composite/ast/element";
 
 interface IRehypeReactOpts {
   preCompileNode?: (node: Node) => Node;
@@ -33,20 +34,33 @@ const rehype2React: Attacher = function(options?: IRehypeReactOpts | unknown) {
         };
       }
     }
-    return toH(h, tableCellStyle(node), prefix);
+    return toH(h, preNodeCompile(node), prefix);
   }
 
-  function h(name: string, props: any, children: any) {
+  const h = (name: string, props: any, children: any) => {
     const component = components.hasOwnProperty(name) ? components[name] : name;
-    return createElement(component, props, children);
-  }
+    if (props && props.position && props.key) {
+      const { key, position } = props;
+      const hElement = createElement(
+        component,
+        { ...props, key: undefined, position: undefined },
+        children
+      );
+      return createElement(Element, { key, position }, hElement);
+    } else {
+      return createElement(component, props, children);
+    }
+  };
 
-  function tableCellStyle(node: Node) {
+  const preNodeCompile = (node: Node) => {
     visit(node, "element", visitor);
     return node;
-  }
+  };
 
-  function visitor(node: Node) {
+  const visitor = (node: Node) => {
+    if (node.position) {
+      node.properties = { ...node.properties, position: node.position };
+    }
     if (
       node.tagName !== "tr" &&
       node.tagName !== "td" &&
@@ -73,9 +87,9 @@ const rehype2React: Attacher = function(options?: IRehypeReactOpts | unknown) {
       appendStyle(node, cssName, (node.properties as any)[hastName]);
       delete (node.properties as any)[hastName];
     }
-  }
+  };
 
-  function appendStyle(node: Node, property: string, value: string) {
+  const appendStyle = (node: Node, property: string, value: string) => {
     let prevStyle = ((node.properties as any).style || "").trim();
     if (prevStyle && !/;\s*/.test(prevStyle)) {
       prevStyle += ";";
@@ -85,7 +99,7 @@ const rehype2React: Attacher = function(options?: IRehypeReactOpts | unknown) {
     }
     const nextStyle = prevStyle + property + ": " + value + ";";
     (node.properties as any).style = nextStyle;
-  }
+  };
 };
 
 export default rehype2React;

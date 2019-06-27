@@ -2,9 +2,12 @@ import React, {
   ChangeEventHandler,
   Component,
   RefObject,
-  UIEventHandler
+  SyntheticEvent
 } from "react";
+import { connect } from "react-redux";
+import { Dispatch } from "redux";
 import { STUB } from "../../constants";
+import { ISetCursorAction, setCursor } from "../../modules/configureReduxStore";
 import { ASTOutput } from "../composite/ast/astOutput";
 import styled from "../static/appStyles";
 
@@ -41,14 +44,17 @@ const TextArea = styled.textarea`
   align-self: flex-end;
 `;
 
-interface IState {
-  content: string;
-  cursor?: number;
+interface IProps {
+  cursorAt: (cursor: number | null) => ISetCursorAction;
 }
 
-class EditorController extends Component<{}, IState> {
+interface IState {
+  content: string;
+}
+
+class EditorController extends Component<IProps, IState> {
   private textAreaRef: RefObject<HTMLTextAreaElement>;
-  constructor(props: {}) {
+  constructor(props: IProps) {
     super(props);
     this.state = {
       content: STUB
@@ -57,16 +63,17 @@ class EditorController extends Component<{}, IState> {
   }
 
   public render() {
-    const { content, cursor } = this.state;
+    const { content } = this.state;
     return (
       <CreateContainer>
         <PreviewContainer>
-          <ASTOutput source={content} cursor={cursor} />
+          <ASTOutput source={content} />
         </PreviewContainer>
         <TextArea
           value={content}
           onChange={this.handleChange}
-          onScroll={this.handleScroll}
+          // onScroll={this.handleScroll}
+          onSelect={this.handleSelect}
           ref={this.textAreaRef}
         />
       </CreateContainer>
@@ -78,19 +85,33 @@ class EditorController extends Component<{}, IState> {
     this.setState(() => ({ content }));
   };
 
-  protected handleScroll: UIEventHandler<HTMLTextAreaElement> = e => {
+  // protected handleScroll: UIEventHandler<HTMLTextAreaElement> = e => {
+  //   if (e.currentTarget) {
+  //     window.scrollTo({
+  //       top: e.currentTarget.scrollTop,
+  //       behavior: "auto"
+  //     });
+  //     const { selectionStart } = e.currentTarget;
+  //     this.props.cursorAt(selectionStart);
+  //   } else {
+  //     // tslint:disable-next-line:no-console
+  //     console.error("missing target/ref");
+  //   }
+  // };
+
+  protected handleSelect = (e: SyntheticEvent<HTMLTextAreaElement>) => {
     if (e.currentTarget) {
-      window.scrollTo({
-        top: e.currentTarget.scrollTop,
-        behavior: "auto"
-      });
       const { selectionStart } = e.currentTarget;
-      this.setState(() => ({ cursor: selectionStart }));
-    } else {
-      // tslint:disable-next-line:no-console
-      console.error("missing target/ref");
+      this.props.cursorAt(selectionStart);
     }
   };
 }
 
-export { EditorController as Create };
+const mapStateToProps = () => ({});
+const mapDispatchToProps = (dispatch: Dispatch) => ({
+  cursorAt: (cursor: number | null) => dispatch(setCursor(cursor))
+});
+export const Create = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(EditorController);
