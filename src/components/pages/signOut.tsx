@@ -66,7 +66,7 @@ class SignOutController extends Component<IProps, IState> {
       <Center gridTemplateAreas={`"title" "form" "links"`}>
         <LoadingOverlay
           gridArea={"form"}
-          loading={isLoading}
+          isLoading={isLoading}
           loadingText={loadingText}
         />
         <Helmet>

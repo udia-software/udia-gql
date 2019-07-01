@@ -9,3 +9,4 @@ jspm_packages
 .build
 build
 coverage
+.DS_Store

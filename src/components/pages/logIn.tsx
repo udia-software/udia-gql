@@ -10,7 +10,6 @@ import React, {
   RefObject
 } from "react";
 import { withApollo } from "react-apollo";
-import { Cookies, withCookies } from "react-cookie";
 import { Helmet } from "react-helmet-async";
 import { connect } from "react-redux";
 import { Redirect } from "react-router";
@@ -56,7 +55,6 @@ interface IState {
 
 interface IProp {
   client: ApolloClient<{}>;
-  cookies: Cookies;
   NODE_ENV: string;
   userId?: string;
   login: (userId: string) => ISetUserIDAction;
@@ -127,7 +125,7 @@ class LogInController extends Component<IProp, IState> {
       <Center gridTemplateAreas={`"title" "form" "links";`}>
         <LoadingOverlay
           gridArea={"form"}
-          loading={isLoading}
+          isLoading={isLoading}
           loadingText={loadingText}
         />
         <Helmet>
@@ -417,4 +415,4 @@ const mapDispatchToProps = (dispatch: Dispatch) => ({
 export const LogIn = connect(
   mapStateToProps,
   mapDispatchToProps
-)(withCookies(withApollo(LogInController)));
+)(withApollo(LogInController));

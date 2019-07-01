@@ -3,6 +3,7 @@ export const JWT_SECRET = process.env.JWT_SECRET || "DEVELOPMENT_JWT_SECRET";
 export const COOKIE_SECRET = process.env.COOKIE_SECRET || "DEVELOPMENT_COOKIE_SECRET";
 export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 export const USERS_TABLE = process.env.USERS_TABLE || "users-udia-gql-dev";
+export const ITEMS_TABLE = process.env.ITEMS_TABLE || "items-udia-gql-dev";
 export const DYNAMODB_STAGE = process.env.DYNAMODB_STAGE || "dev";
 export const DYNAMODB_ENDPOINT = DYNAMODB_STAGE === "prod" ? undefined : (
   process.env.DYNAMODB_ENDPOINT || "http://localhost:8000");

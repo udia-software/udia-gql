@@ -1,21 +1,22 @@
+import ItemManager from "../managers/itemManager";
 import UserManager from "../managers/userManager";
 import { GraphQLTypeLong } from "./scalars";
-import { ICreateUserInput, ISignInUserInput } from "./schema";
+import { ICreateItemInput, ICreateUserInput, ISignInUserInput } from "./schema";
 
 // Provide resolver functions for your schema fields
 export const resolvers = {
   Query: {
     hello: () => "Hello world!",
-    getUserAuthParams: async (_: any, params: { username: string }) => {
-      return UserManager.getUserAuthParams(params.username);
-    }
+    getUserAuthParams: (_: any, params: { username: string }) =>
+      UserManager.getUserAuthParams(params.username)
   },
   Mutation: {
-    createUser: async (_: any, params: { data: ICreateUserInput }) =>
+    createUser: (_: any, params: { data: ICreateUserInput }) =>
       UserManager.createUser(params.data),
-    signInUser: async (_: any, args: { data: ISignInUserInput }) => {
-      return UserManager.signInUser(args.data);
-    },
+    signInUser: (_: any, args: { data: ISignInUserInput }) =>
+      UserManager.signInUser(args.data),
+    createItem: (_: any, args: { data: ICreateItemInput }) =>
+      ItemManager.createItem(args.data)
   },
   // Put custom scalars here
   Long: GraphQLTypeLong

@@ -10,12 +10,13 @@ plugins:
   - serverless-offline
 
 custom:
-  usersTable: 'users-${self:service}-${opt:stage, self:provider.stage}'
+  usersTable: "users-${self:service}-${opt:stage, self:provider.stage}"
+  itemsTable: "items-${self:service}-${opt:stage, self:provider.stage}"
   serverless-offline:
     host: 0.0.0.0
   dynamoDbEndpoint:
-    prod: ''
-    dev: 'http://localhost:8000'
+    prod: ""
+    dev: "http://localhost:8000"
   nodeEnv:
     prod: production
     dev: development
@@ -41,13 +42,14 @@ custom:
 provider:
   name: aws
   runtime: nodejs8.10
-  stage: ${opt:stage, 'dev'}
-  region: ${opt:region, 'us-west-2'}
+  stage: ${opt:stage, "dev"}
+  region: ${opt:region, "us-west-2"}
   cfnRole: arn:aws:iam::593583987155:role/Serverless_CloudFormation
   logRetentionInDays: 14
   environment:
     NODE_ENV: ${self:custom.nodeEnv.${self:provider.stage}}
     USERS_TABLE: ${self:custom.usersTable}
+    ITEMS_TABLE: ${self:custom.itemsTable}
     DYNAMODB_ENDPOINT: ${self:custom.dynamoDbEndpoint.${self:provider.stage}}
     DYNAMODB_REGION: ${self:provider.region}
     DYNAMODB_STAGE: ${self:provider.stage}
@@ -63,17 +65,19 @@ provider:
         - dynamodb:BatchWriteItem
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.usersTable}"
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.itemsTable}"
     - Effect: Allow
       Action:
         - dynamodb:Query
         - dynamodb:Scan
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.usersTable}/index/*"
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.itemsTable}/index/*"
 
 resources:
   Resources:
     UsersDynamoDbTable:
-      Type: 'AWS::DynamoDB::Table'
+      Type: "AWS::DynamoDB::Table"
       DeletionPolicy: Delete
       Properties:
         AttributeDefinitions:
@@ -101,6 +105,32 @@ resources:
                 - type
                 - payload
         TableName: ${self:custom.usersTable}
+    ItemsDynamoDbTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Delete
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: uuid
+            AttributeType: S
+          - AttributeName: depth
+            AttributeType: N
+          - AttribuetName: userId
+            AttributeType: S
+        BillingMode: PAY_PER_REQUEST
+        KeySchema:
+          - AttributeName: uuid
+            KeyType: HASH
+          - AttributeName: depth
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: UserIndex
+            KeySchema:
+              - AttributeName: INCLUDE
+                NonKeyAttributes:
+                  - uuid
+                  - depth
+                  - payload 
+        TableName: ${self:custom.itemsTable}
 
 functions:
   hello:

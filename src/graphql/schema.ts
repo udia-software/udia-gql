@@ -124,6 +124,59 @@ export interface IUserAuthParams {
 }
 
 /**
+ * Item creation parameters
+ */
+const InputCreateItem = `input CreateItemInput {
+  # Base64 encode item content, if encrypted this is the cipher text
+  payload: String!
+  # Optional parent item UUID
+  parentId: ID
+  # Symmetric or Asymmetric encrypted item, blank if not encrypted
+  encryptionType: String
+  # Encryption version used
+  version: String
+  # Auth, Verification value
+  auth: String
+  # Single use encryption addenum
+  iv: String
+  # Signature of content before encryption
+  sig: String!
+}`;
+export interface ICreateItemInput {
+  payload: string;
+  parentId?: string;
+  encryptionType?: "SYMMETRIC" | "ASYMMETRIC";
+  version?: string;
+  auth?: string;
+  iv?: string;
+  sig: string;
+}
+const TypeItem = `type Item {
+  uuid: ID!
+  createdBy: User
+  payload: String!
+  parentId: ID
+  encryptionType: String
+  version: String
+  auth: String
+  iv: String
+  sig: String!
+  createdAt: Long!
+}`;
+export interface IItem {
+  uuid: string;
+  createdBy?: IUser;
+  payload: string;
+  parentId?: string;
+  encryptionType?: string;
+  version?: string;
+  auth?: string;
+  iv?: string;
+  sig: string;
+  createdAt: number;
+}
+
+/**
  * Queries, Mutations, Scalars
  */
 const Query = `type Query {
@@ -133,6 +186,7 @@ const Query = `type Query {
 const Mutation = `type Mutation {
   createUser(data: CreateUserInput!): UserAuthPayload!
   signInUser(data: SignInUserInput!): UserAuthPayload!
+  createItem(data: CreateItemInput!): Item!
 }`;
 // Custom scalars should also be entered in the resolvers
 const Scalars = `scalar Long`;
@@ -150,6 +204,8 @@ const gqlTypes: ReadonlyArray<string> = [
   TypePwFuncOptions,
   TypeUserAuthPayload,
   TypeUserAuthParams,
+  InputCreateItem,
+  TypeItem,
   Query,
   Mutation,
   Scalars

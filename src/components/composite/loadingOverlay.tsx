@@ -3,7 +3,7 @@ import styled from "../static/appStyles";
 import { Logo } from "../static/logo";
 
 const StyledGridLoadingOverlay = styled.div<IProps>(props => ({
-  display: props.loading ? "grid" : "none",
+  display: props.isLoading ? "grid" : "none",
   gridAutoColumns: "auto",
   placeItems: "center",
   placeContent: "center",
@@ -18,13 +18,13 @@ const StyledGridLoadingOverlay = styled.div<IProps>(props => ({
 
 interface IProps {
   gridArea: string;
-  loading: boolean;
+  isLoading: boolean;
   loadingText?: string;
 }
 
 export const LoadingOverlay = (props: IProps) => (
   <StyledGridLoadingOverlay {...props}>
-    <Logo isLoading={props.loading} height={66} />
+    <Logo isLoading={props.isLoading} height={66} />
     {!!props.loadingText ? props.loadingText : "Loading..."}
   </StyledGridLoadingOverlay>
 );

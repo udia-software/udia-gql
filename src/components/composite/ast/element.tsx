@@ -45,18 +45,25 @@ const ElementIndicator = () => {
 const TreeElement = (props: IProps) => {
   const { cursor, position } = props;
 
-  const activateCursor =
-    !!position &&
-    !!cursor &&
-    !!position.start.offset &&
-    !!position.end.offset &&
-    position.start.offset <= cursor &&
-    cursor <= position.end.offset;
+  // this should be more robust to multiple line separated element values
+  const preActivateCursor =
+    position !== undefined &&
+    cursor !== undefined &&
+    position.start.offset !== undefined &&
+    position.end.offset !== undefined;
+
+  const activateCursor = preActivateCursor &&
+    position!.start.offset! <= cursor! &&
+    cursor! <= position!.end.offset!;
+
+  const postActivateCursor = preActivateCursor &&
+    cursor! - 1 === position!.end.offset!;
 
   return (
     <Fragment key={props.key}>
-      {activateCursor && <ElementIndicator/>}
+      {activateCursor && <ElementIndicator />}
       {props.children}
+      {postActivateCursor && <ElementIndicator />}
     </Fragment>
   );
 };
