@@ -16,7 +16,7 @@ import { ServerStyleSheet } from "styled-components";
 import cookiesMiddleware from "universal-cookie-express";
 import { UniversalApplication } from "../components/app";
 import { NODE_ENV } from "../constants";
-import UserManager from "../managers/userManager";
+import { seedCookiePayload } from "../server/user";
 import Auth from "./auth";
 import { IRootState, rootReducer } from "./configureReduxStore";
 
@@ -85,7 +85,7 @@ app.get("/*", async (req, res) => {
     const { uuid } = Auth.verifyUserJWT(jwt);
     if (uuid) {
       // get the username
-      const { username } = await UserManager.seedCookiePayload(uuid);
+      const { username } = await seedCookiePayload(uuid);
       // re-create the store with preloaded user data
       reduxState.userUniversal.userId = uuid;
       reduxState.userUniversal.username = username;

@@ -28,7 +28,7 @@ import { LocalForageContext } from "../../modules/localForageContext";
 import {
   IErrorMessage,
   isEmailValid,
-  isUsernameValid
+  isUsernameSyntaxOK
 } from "../../modules/validators";
 import { EmailFormField } from "../composite/emailFormField";
 import { LoadingOverlay } from "../composite/loadingOverlay";
@@ -483,7 +483,7 @@ class SignUpController extends Component<IProps, IState> {
     let unameLengthOK = true;
     let unameSpaceOK = true;
 
-    if (!isUsernameValid(usernameInput, errors)) {
+    if (!isUsernameSyntaxOK(usernameInput, errors)) {
       for (const { message } of errors) {
         if (
           message.indexOf("is too long") >= 0 ||

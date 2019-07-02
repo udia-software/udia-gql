@@ -114,9 +114,9 @@ resources:
             AttributeType: S
           - AttributeName: depth
             AttributeType: N
-          - AttributeName: parentId
+          - AttributeName: ancestor
             AttributeType: S
-          - AttribuetName: creatorId
+          - AttribuetName: creator
             AttributeType: S
         BillingMode: PAY_PER_REQUEST
         KeySchema:
@@ -127,7 +127,7 @@ resources:
         GlobalSecondaryIndexes:
           - IndexName: ItemClosureIndex
             KeySchema:
-              - AttributeName: parentId
+              - AttributeName: ancestor
                 KeyType: HASH
               - AttributeName: depth
                 KeyType: RANGE
@@ -135,10 +135,10 @@ resources:
               ProjectionType: INCLUDE
               NonKeyAttributes:
                 - uuid
-                - creatorId
+                - creator
           - IndexName: ItemCreatorIndex
             KeySchema:
-              - AttributeName: creatorId
+              - AttributeName: creator
                 KeyType: HASH
               - AttributeName: depth
                 KeyType: RANGE
@@ -146,7 +146,7 @@ resources:
               ProjectionType: INCLUDE
               NonKeyAttributes:
                 - uuid
-                - parentId
+                - ancestor
                 - payload
         TableName: ${self:custom.itemsTable}
 

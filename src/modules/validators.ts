@@ -4,7 +4,7 @@ export interface IErrorMessage {
   message: string;
 }
 
-export const isUsernameValid = (username: string, errors: IErrorMessage[]) => {
+export const isUsernameSyntaxOK = (username: string, errors: IErrorMessage[]) => {
   const nUsername = username.normalize("NFKC").trim();
   let isValid = true;
   if (nUsername.length > 24) {
@@ -26,6 +26,12 @@ export const isUsernameValid = (username: string, errors: IErrorMessage[]) => {
       message: "Username should not contain whitespace."
     });
     isValid = false;
+  }
+  if (nUsername.indexOf("@") >= 0) {
+    errors.push({
+      key: "username",
+      message: "Username should not contain '@' symbol."
+    });
   }
   return isValid;
 };

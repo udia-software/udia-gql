@@ -71,8 +71,8 @@ async function main() {
         AttributeDefinitions: [
           { AttributeName: "uuid", AttributeType: "S" },
           { AttributeName: "depth", AttributeType: "N" },
-          { AttributeName: "parentId", AttributeType: "S" },
-          { AttributeName: "creatorId", AttributeType: "S" },
+          { AttributeName: "ancestor", AttributeType: "S" },
+          { AttributeName: "creator", AttributeType: "S" },
         ],
         BillingMode: "PAY_PER_REQUEST",
         KeySchema: [
@@ -82,22 +82,22 @@ async function main() {
         GlobalSecondaryIndexes: [{
           IndexName: "ItemClosureIndex",
           KeySchema: [
-            { AttributeName: "parentId", KeyType: "HASH" },
+            { AttributeName: "ancestor", KeyType: "HASH" },
             { AttributeName: "depth", KeyType: "RANGE" }
           ],
           Projection: {
             ProjectionType: "INCLUDE",
-            NonKeyAttributes: ["uuid", "creatorId"]
+            NonKeyAttributes: ["uuid", "creator"]
           }
         }, {
           IndexName: "ItemCreatorIndex",
           KeySchema: [
-            { AttributeName: "creatorId", KeyType: "HASH" },
+            { AttributeName: "creator", KeyType: "HASH" },
             { AttributeName: "depth", KeyType: "RANGE" }
           ],
           Projection: {
             ProjectionType: "INCLUDE",
-            NonKeyAttributes: ["uuid", "parentId", "payload"]
+            NonKeyAttributes: ["uuid", "ancestor", "payload"]
           }
         }]
       }, (err, data) => {

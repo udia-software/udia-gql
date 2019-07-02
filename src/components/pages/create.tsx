@@ -258,8 +258,10 @@ class EditorController extends Component<IProps, IState> {
         fetchPolicy: "no-cache"
       });
       const responseData = createItemResponse.data.createItem;
+      // tslint:disable-next-line: no-console
       console.log(responseData);
     } catch (err) {
+      // tslint:disable-next-line: no-console
       console.error(err);
       let errorMessage: string;
       if (err.graphQLErrors &&
@@ -289,7 +291,6 @@ class EditorController extends Component<IProps, IState> {
 
   protected handleResizeStart: MouseEventHandler<HTMLDivElement> = e => {
     const { clientY } = e;
-    console.log("resizeStart", clientY);
     this.setState(() => ({
       resizing: true,
       lastResizePosition: clientY
@@ -299,12 +300,9 @@ class EditorController extends Component<IProps, IState> {
   protected handleResizeMove: MouseEventHandler<HTMLDivElement> = e => {
     const { resizing, lastResizePosition } = this.state;
     const { clientY } = e;
-    console.log("resizeMove", clientY);
     if (resizing && this.editorRef.current && lastResizePosition !== null) {
-
       const heightDelta = lastResizePosition - clientY;
       const editorHeight = this.editorRef.current.clientHeight;
-      console.log(lastResizePosition, clientY, heightDelta, editorHeight);
       if (heightDelta !== 0) {
         // apply height difference
         this.editorRef.current.style.height = `${editorHeight + heightDelta}px`;
@@ -313,8 +311,7 @@ class EditorController extends Component<IProps, IState> {
     }
   }
 
-  protected handleResizeEnd: MouseEventHandler<HTMLDivElement> = e => {
-    console.log("resizeEnd", e.clientY);
+  protected handleResizeEnd: MouseEventHandler<HTMLDivElement> = () => {
     this.setState(() => ({
       resizing: false,
       lastResizePosition: null
