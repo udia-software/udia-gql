@@ -17,6 +17,7 @@ import {
   ICryptoKey,
   IPwFuncOptions,
   ISignInUserInput,
+  IUser,
   IUserAuthParams,
   IUserAuthPayload
 } from "../graphql/schema";
@@ -255,8 +256,8 @@ export default class UserManager {
     if (!keysOutput.Count || !keysOutput.Items || keysOutput.Count !== 2) {
       throw new AuthenticationError("User key store broken");
     }
-    let signKeyPayload: ICryptoKey | undefined;
-    let encryptKeyPayload: ICryptoKey | undefined;
+    let signKeyPayload: ICryptoKey;
+    let encryptKeyPayload: ICryptoKey;
     for (const projection of keysOutput.Items) {
       if (projection.type === this.TYPE_ENCRYPT_KEY) {
         encryptKeyPayload = projection.payload;
@@ -269,10 +270,6 @@ export default class UserManager {
       }
     }
 
-    if (!signKeyPayload || !encryptKeyPayload) {
-      throw new AuthenticationError("User key store broken");
-    }
-
     return {
       jwt: Auth.signUserJWT(uuid),
       user: {
@@ -280,8 +277,8 @@ export default class UserManager {
         username: userProjection.payload.username,
         pwFunc: userProjection.payload.pwFunc,
         pwFuncOptions: userProjection.payload.PwFuncOptions,
-        signKeyPayload,
-        encryptKeyPayload,
+        signKeyPayload: signKeyPayload!,
+        encryptKeyPayload: encryptKeyPayload!,
         createdAt: userProjection.payload.createdAt
       }
     };
@@ -350,6 +347,56 @@ export default class UserManager {
       return { username: output.Item.payload.username };
     }
     return {};
+  }
+
+  public static async getUserFromID(uuid: string): Promise<IUser> {
+    const getUserParams: DocumentClient.QueryInput = {
+      TableName: USERS_TABLE,
+      KeyConditionExpression:
+        "#uuid = :uuid AND #type BETWEEN :usernameType AND :encKeyType",
+      ExpressionAttributeNames: { "#uuid": "uuid", "#type": "type" },
+      ExpressionAttributeValues: {
+        ":uuid": uuid,
+        ":encKeyType": this.TYPE_ENCRYPT_KEY,
+        ":usernameType": this.TYPE_USERNAME
+      },
+      ProjectionExpression: "#type, payload"
+    };
+    const getUserOutput = await new Promise<DocumentClient.QueryOutput>(
+      (resolve, reject) => docDbClient.query(getUserParams, (err, data) => {
+        if (err) { reject(err); } else { resolve(data); }
+      })
+    );
+    if (!getUserOutput.Count || !getUserOutput.Items) {
+      throw new AuthenticationError("User key store broken");
+    }
+    let signKeyPayload: ICryptoKey;
+    let encryptKeyPayload: ICryptoKey;
+    let usernamePayload: IDyanmoUsername["payload"];
+    for (const projection of getUserOutput.Items) {
+      if (projection.type === this.TYPE_ENCRYPT_KEY) {
+        encryptKeyPayload = projection.payload;
+      } else if (projection.type === this.TYPE_SIGN_KEY) {
+        signKeyPayload = projection.payload;
+      } else if (projection.type === this.TYPE_USERNAME) {
+        usernamePayload = projection.payload;
+      } else if (projection.type === this.TYPE_PRIMARY_EMAIL) {
+        // dynamodb sort key has no not equals filter :/
+        // tslint:disable-next-line: no-empty
+      } else {
+        throw new AuthenticationError(`Unexpected projection type ${projection.type}`);
+      }
+    }
+
+    return {
+      uuid,
+      username: usernamePayload!.username,
+      pwFunc: usernamePayload!.pwFunc,
+      pwFuncOptions: usernamePayload!.pwFuncOptions,
+      signKeyPayload: signKeyPayload!,
+      encryptKeyPayload: encryptKeyPayload!,
+      createdAt: usernamePayload!.createdAt
+    };
   }
 
   private static async isEmailAvailable(

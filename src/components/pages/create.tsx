@@ -1,16 +1,20 @@
 import ApolloClient from "apollo-client";
-import React, { ChangeEventHandler, Component, MouseEventHandler, RefObject, SyntheticEvent } from "react";
+import gql from "graphql-tag";
+import React, { ChangeEventHandler, Component, ContextType, MouseEventHandler, RefObject, SyntheticEvent } from "react";
 import { withApollo } from "react-apollo";
 import { Helmet } from "react-helmet-async";
 import { connect } from "react-redux";
 import { Dispatch } from "redux";
 import { STUB } from "../../constants";
+import { ICreateItemInput } from "../../graphql/schema";
 import { ISetCursorAction, setCursor } from "../../modules/configureReduxStore";
+import Crypt, { IEncryptKeyPair, ISignKeyPair } from "../../modules/crypt";
+import { LocalForageContext } from "../../modules/localForageContext";
 import { ASTOutput } from "../composite/ast/astOutput";
 import { LoadingOverlay } from "../composite/loadingOverlay";
 import styled from "../static/appStyles";
 import { Checkbox } from "../static/checkbox";
-import { FormField, FormLabel, FormLabelContent, SubmitButton } from "../static/formHelpers";
+import { FormField, FormLabel, FormLabelContent, FormOutput, SubmitButton } from "../static/formHelpers";
 
 const CreateContainer = styled.div`
   display: flex;
@@ -83,9 +87,10 @@ interface IState {
   lastResizePosition: number | null;
   isLoading: boolean;
   submitButtonText: string;
-  showFormErrors?: string;
   submitEncrypted: boolean;
   loadingText: string;
+  hasError: boolean;
+  errorMessage: string;
 }
 
 const BUTTON_TEXT = {
@@ -95,6 +100,9 @@ const BUTTON_TEXT = {
 };
 
 class EditorController extends Component<IProps, IState> {
+  public static contextType = LocalForageContext;
+  public context!: ContextType<typeof LocalForageContext>;
+
   private textAreaRef: RefObject<HTMLTextAreaElement>;
   private editorRef: RefObject<HTMLFormElement>;
   constructor(props: IProps) {
@@ -106,7 +114,9 @@ class EditorController extends Component<IProps, IState> {
       isLoading: false,
       submitButtonText: BUTTON_TEXT.public,
       submitEncrypted: false,
-      loadingText: ""
+      loadingText: "",
+      hasError: false,
+      errorMessage: ""
     };
     this.textAreaRef = React.createRef();
     this.editorRef = React.createRef();
@@ -119,7 +129,7 @@ class EditorController extends Component<IProps, IState> {
   }
 
   public render() {
-    const { content, isLoading, submitButtonText, showFormErrors, submitEncrypted, loadingText } = this.state;
+    const { content, isLoading, submitButtonText, submitEncrypted, loadingText, hasError, errorMessage } = this.state;
     return (
       <CreateContainer>
         <Helmet>
@@ -129,7 +139,7 @@ class EditorController extends Component<IProps, IState> {
         <PreviewContainer>
           <ASTOutput source={content} />
         </PreviewContainer>
-
+        {hasError && <FormOutput>{errorMessage}</FormOutput>}
         <FormField>
           <FormLabel style={{ cursor: "pointer" }}>
             <FormLabelContent>
@@ -144,13 +154,13 @@ class EditorController extends Component<IProps, IState> {
         </FormField>
         <SubmitButton
           type="button"
-          disabled={isLoading || !!showFormErrors}
+          disabled={isLoading}
           children={submitButtonText}
           onClick={this.handleSubmit}
         />
         <EditorContainer ref={this.editorRef}>
-          <ResizeBar
-            children={"todo resizer"} />
+          {false && <ResizeBar
+            children={"todo resizer"} />}
           <LoadingOverlay
             gridArea={"editor"}
             isLoading={isLoading}
@@ -179,7 +189,7 @@ class EditorController extends Component<IProps, IState> {
 
   protected handleChange: ChangeEventHandler<HTMLTextAreaElement> = e => {
     const content = e.currentTarget.value;
-    this.setState(() => ({ content }));
+    this.setState(() => ({ content, hasError: false }));
   };
 
   protected handleSelect = (e: SyntheticEvent<HTMLTextAreaElement>) => {
@@ -189,18 +199,86 @@ class EditorController extends Component<IProps, IState> {
     }
   };
 
-  protected handleSubmit: MouseEventHandler<HTMLButtonElement> = e => {
+  protected handleSubmit: MouseEventHandler<HTMLButtonElement> = async e => {
     e.preventDefault();
+    const { client } = this.props;
+    const { submitEncrypted, content } = this.state;
+
     this.setState(() => ({
       isLoading: true,
-      submitButtonText: BUTTON_TEXT.loading
+      submitButtonText: BUTTON_TEXT.loading,
+      loadingText: "Fetching user cryptographic key pairs..."
     }));
 
-    const { submitEncrypted } = this.state;
     try {
-      // todo submit gql method call
+      const signKeyPair = await this.context.getItem<ISignKeyPair>("signKeyPair");
+      const encryptKeyPair = await this.context.getItem<IEncryptKeyPair>("encryptKeyPair");
+
+      this.setState(() => ({
+        loadingText: "Signing item content"
+      }));
+      const sig = Crypt.signMessage(content, signKeyPair);
+      const data: ICreateItemInput = { content, sig };
+      if (submitEncrypted) {
+        this.setState(() => ({
+          loadingText: "Encrypting item content"
+        }));
+        const encPayload = Crypt.asymmetricEncrypt(content, encryptKeyPair.publicKey, encryptKeyPair, signKeyPair);
+        data.content = encPayload.cipherText;
+        data.encryptionType = encPayload.type;
+        data.version = encPayload.version;
+        data.auth = encPayload.auth;
+        data.iv = encPayload.iv;
+      }
+
+      this.setState(() => ({
+        loadingText: "Sending request to server..."
+      }));
+      const createItemResponse = await client.mutate({
+        mutation: gql`
+          mutation CreateItem($data: CreateItemInput!) {
+            createItem(data: $data) {
+              uuid
+              createdBy {
+                uuid
+                username
+              }
+              content
+              parentId
+              encryptionType
+              version
+              auth
+              iv
+              sig
+              createdAt
+            }
+          }
+        `,
+        variables: { data },
+        fetchPolicy: "no-cache"
+      });
+      const responseData = createItemResponse.data.createItem;
+      console.log(responseData);
     } catch (err) {
       console.error(err);
+      let errorMessage: string;
+      if (err.graphQLErrors &&
+        err.graphQLErrors[0] &&
+        err.graphQLErrors[0].extensions &&
+        err.graphQLErrors[0].extensions.exception &&
+        err.graphQLErrors[0].extensions.exception[0]
+      ) {
+        const { message } = err.graphQLErrors[0].extensions.exception[0];
+        errorMessage = message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      } else {
+        errorMessage = err.toString();
+      }
+      this.setState(() => ({
+        hasError: true,
+        errorMessage
+      }));
     } finally {
       this.setState(() => ({
         isLoading: false,

@@ -128,7 +128,7 @@ export interface IUserAuthParams {
  */
 const InputCreateItem = `input CreateItemInput {
   # Base64 encode item content, if encrypted this is the cipher text
-  payload: String!
+  content: String!
   # Optional parent item UUID
   parentId: ID
   # Symmetric or Asymmetric encrypted item, blank if not encrypted
@@ -143,7 +143,7 @@ const InputCreateItem = `input CreateItemInput {
   sig: String!
 }`;
 export interface ICreateItemInput {
-  payload: string;
+  content: string;
   parentId?: string;
   encryptionType?: "SYMMETRIC" | "ASYMMETRIC";
   version?: string;
@@ -154,7 +154,7 @@ export interface ICreateItemInput {
 const TypeItem = `type Item {
   uuid: ID!
   createdBy: User
-  payload: String!
+  content: String!
   parentId: ID
   encryptionType: String
   version: String
@@ -166,7 +166,7 @@ const TypeItem = `type Item {
 export interface IItem {
   uuid: string;
   createdBy?: IUser;
-  payload: string;
+  content: string;
   parentId?: string;
   encryptionType?: string;
   version?: string;
