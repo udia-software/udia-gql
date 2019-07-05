@@ -1,4 +1,5 @@
 import { gql } from "apollo-server-lambda";
+import { DocumentClient } from "aws-sdk/clients/dynamodb";
 import { ICryptPayload } from "../modules/crypt";
 
 /**
@@ -176,6 +177,39 @@ export interface IItem {
   createdAt: number;
 }
 
+const InputPaginateItemKey = `input PaginateItemKeyInput {
+  day: String
+  qKey: ID
+}`;
+const TypePaginateItemKey = `type PaginateItemKey {
+  day: String
+  qKey: ID
+}`;
+export interface IPaginateItemKey {
+  day?: string;
+  qKey?: DocumentClient.Key;
+}
+const InputPaginateItem = `input PaginateItemInput {
+  username: String
+  parentId: ID
+  encrypted: Boolean
+  paginateKey: PaginateItemKeyInput
+}`;
+export interface IPaginateItemInput {
+  username?: string;
+  parentId?: string;
+  encrypted?: boolean;
+  paginateKey?: IPaginateItemKey;
+}
+const TypePaginatedItems = `type PaginatedItems {
+  items: [Item]!
+  paginateKey: PaginateItemKey!
+}`;
+export interface IPaginatedItems {
+  items: IItem[];
+  paginateKey: IPaginateItemKey;
+}
+
 /**
  * Queries, Mutations, Scalars
  */
@@ -206,6 +240,10 @@ const gqlTypes: ReadonlyArray<string> = [
   TypeUserAuthParams,
   InputCreateItem,
   TypeItem,
+  InputPaginateItemKey,
+  TypePaginateItemKey,
+  InputPaginateItem,
+  TypePaginatedItems,
   Query,
   Mutation,
   Scalars

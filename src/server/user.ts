@@ -143,7 +143,7 @@ export async function signInUser({ username, pwh }: ISignInUserInput): Promise<I
   const usernameId = uuidv5(nUsername.toLowerCase(), USERS_UUID_NS);
   const queryByUsername = await asyncQuery({
     TableName: USERS_TABLE,
-    IndexName: "PayloadIndex",
+    IndexName: "UserPayloadIndex",
     KeyConditionExpression: "payloadId = :usernameId",
     ExpressionAttributeValues: { ":usernameId": usernameId },
     ProjectionExpression: "#uuid, payload",
@@ -164,22 +164,32 @@ export async function signInUser({ username, pwh }: ISignInUserInput): Promise<I
 }
 
 export async function getUserAuthParams(username: string): Promise<IUserAuthParams> {
-  const nUsername = username.normalize("NFKC").trim();
+  const { pwFunc, pwFuncOptions } = await getUserStubByUsername(username);
+  if (pwFunc && pwFuncOptions) {
+    return { pwFunc, pwFuncOptions };
+  }
+  throw new UserInputError("User does not exist", [{ key: "username", message: "User does not exist." }]);
+}
+
+export async function getUserStubByUsername(qUsername: string): Promise<Partial<IUser>> {
+  const nUsername = qUsername.normalize("NFKC").trim();
   if (isUsernameSyntaxOK(nUsername, [])) {
     const usernameId = uuidv5(nUsername.toLowerCase(), USERS_UUID_NS);
     const queryUsernameOutput = await asyncQuery({
       TableName: USERS_TABLE,
-      IndexName: "PayloadIndex",
+      IndexName: "UserPayloadIndex",
       KeyConditionExpression: "payloadId = :usernameId",
       ExpressionAttributeValues: { ":usernameId": usernameId },
       ProjectionExpression: "payload"
     });
     if (queryUsernameOutput.Count && queryUsernameOutput.Items) {
-      const { payload: { pwFunc, pwFuncOptions } } = queryUsernameOutput.Items[0] as IDynamoUsername;
-      return { pwFunc, pwFuncOptions };
+      const { uuid,
+        payload: { pwFunc, pwFuncOptions, username, createdAt }
+      } = queryUsernameOutput.Items[0] as IDynamoUsername;
+      return { uuid, username, pwFunc, pwFuncOptions, createdAt };
     }
   }
-  throw new UserInputError("User does not exist", [{ key: "username", message: "User does not exist." }]);
+  return {};
 }
 
 export async function getUserById(uuid: string): Promise<IUser> {
@@ -233,7 +243,7 @@ export async function isEmailAvailable(emailId: string, errors: IErrorMessage[])
   let isAvailable = true;
   const output = await asyncQuery({
     TableName: USERS_TABLE,
-    IndexName: "PayloadIndex",
+    IndexName: "UserPayloadIndex",
     KeyConditionExpression: "payloadId = :emailId",
     ExpressionAttributeValues: { ":emailId": emailId },
     ProjectionExpression: "#uuid",
@@ -260,7 +270,7 @@ export async function isUsernameAvailable(
   let isAvailable = true;
   const output = await asyncQuery({
     TableName: USERS_TABLE,
-    IndexName: "PayloadIndex",
+    IndexName: "UserPayloadIndex",
     KeyConditionExpression: "payloadId = :usernameId",
     ExpressionAttributeValues: { ":usernameId": usernameId },
     ProjectionExpression: "#uuid",

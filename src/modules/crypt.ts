@@ -8,35 +8,43 @@ type Primative = string | number | boolean | null;
 interface ISerializableArray extends ReadonlyArray<Serializable> {}
 export type Serializable = Primative | Primative[] | ISerializableArray;
 
+export const ENC_TYPE_SYM = "SYMMETRIC";
+export const ENC_TYPE_ASYM = "ASYMMETRIC";
+type CryptPayloadType = typeof ENC_TYPE_SYM | typeof ENC_TYPE_ASYM;
+
+export const KEY_TYPE_SIGN = "SIGN";
+export const KEY_TYPE_ENCRYPT = "ENCRYPT";
+type KeyPairType = typeof KEY_TYPE_SIGN | typeof KEY_TYPE_ENCRYPT;
+
 export interface IMasterKeys {
   pw: string;
   ek: string;
   ak: string;
 }
 export interface ICryptPayload {
-  type: "SYMMETRIC" | "ASYMMETRIC";
+  type: CryptPayloadType;
   version: string;
   auth: string;
   iv: string;
   cipherText: string;
 }
 export interface ISymmetricCryptPayload extends ICryptPayload {
-  type: "SYMMETRIC";
+  type: typeof ENC_TYPE_SYM;
 }
 export interface IAsymmetricCryptPayload extends ICryptPayload {
-  type: "ASYMMETRIC";
+  type: typeof ENC_TYPE_ASYM;
 }
 export interface IKeyPair {
-  type: "SIGN" | "ENCRYPT";
+  type: KeyPairType;
   publicKey: string;
   secretKey: string;
 }
 export interface ISignKeyPair extends IKeyPair {
-  type: "SIGN";
+  type: typeof KEY_TYPE_SIGN;
 }
 
 export interface IEncryptKeyPair extends IKeyPair {
-  type: "ENCRYPT";
+  type: typeof KEY_TYPE_ENCRYPT;
 }
 
 export default class Crypt {
@@ -141,7 +149,7 @@ export default class Crypt {
     const iv = Buffer.from(ivBuf).toString("base64");
     const cipherText = Buffer.from(cipherBuf).toString("base64");
     return {
-      type: "SYMMETRIC",
+      type: ENC_TYPE_SYM,
       version: this.VERSION,
       auth,
       iv,
@@ -204,7 +212,7 @@ export default class Crypt {
     const publicKey = Buffer.from(pubKeyBuf).toString("base64");
     const secretKey = Buffer.from(secKeyBuf).toString("base64");
     return {
-      type: "ENCRYPT",
+      type: KEY_TYPE_ENCRYPT,
       publicKey,
       secretKey
     };
@@ -219,7 +227,7 @@ export default class Crypt {
     const publicKey = Buffer.from(pubKeyBuf).toString("base64");
     const secretKey = Buffer.from(secKeyBuf).toString("base64");
     return {
-      type: "SIGN",
+      type: KEY_TYPE_SIGN,
       publicKey,
       secretKey
     };
@@ -268,7 +276,7 @@ export default class Crypt {
     const iv = Buffer.from(ivBuf).toString("base64");
     const cipherText = Buffer.from(cipherBuf).toString("base64");
     return {
-      type: "ASYMMETRIC",
+      type: ENC_TYPE_ASYM,
       version: this.VERSION,
       auth,
       iv,

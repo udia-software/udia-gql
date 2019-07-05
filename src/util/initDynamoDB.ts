@@ -46,7 +46,7 @@ async function main() {
           { AttributeName: "type", KeyType: "RANGE" }
         ],
         GlobalSecondaryIndexes: [{
-          IndexName: "PayloadIndex",
+          IndexName: "UserPayloadIndex",
           KeySchema: [
             { AttributeName: "payloadId", KeyType: "HASH" }
           ],
@@ -71,35 +71,51 @@ async function main() {
         AttributeDefinitions: [
           { AttributeName: "uuid", AttributeType: "S" },
           { AttributeName: "depth", AttributeType: "N" },
-          { AttributeName: "ancestor", AttributeType: "S" },
+          // { AttributeName: "ancestor", AttributeType: "S" },
           { AttributeName: "creator", AttributeType: "S" },
+          // partition by a UTC "YYYY-MM-DD" for application query logic
+          { AttributeName: "createdAtDay", AttributeType: "S"},
         ],
         BillingMode: "PAY_PER_REQUEST",
         KeySchema: [
           { AttributeName: "uuid", KeyType: "HASH" },
           { AttributeName: "depth", KeyType: "RANGE" }
         ],
-        GlobalSecondaryIndexes: [{
-          IndexName: "ItemClosureIndex",
-          KeySchema: [
-            { AttributeName: "ancestor", KeyType: "HASH" },
-            { AttributeName: "depth", KeyType: "RANGE" }
-          ],
-          Projection: {
-            ProjectionType: "INCLUDE",
-            NonKeyAttributes: ["uuid", "creator"]
-          }
-        }, {
-          IndexName: "ItemCreatorIndex",
-          KeySchema: [
-            { AttributeName: "creator", KeyType: "HASH" },
-            { AttributeName: "depth", KeyType: "RANGE" }
-          ],
-          Projection: {
-            ProjectionType: "INCLUDE",
-            NonKeyAttributes: ["uuid", "ancestor", "payload"]
-          }
-        }]
+        GlobalSecondaryIndexes: [
+          {
+            IndexName: "ItemDayIndex",
+            KeySchema: [
+              { AttributeName: "createdAtDay", KeyType: "HASH" },
+              { AttributeName: "depth", KeyType: "RANGE" }
+            ],
+            Projection: {
+              ProjectionType: "INCLUDE",
+              NonKeyAttributes: ["uuid", "ancestor", "creator", "payload"]
+            }
+          },
+          {
+            IndexName: "ItemCreatorIndex",
+            KeySchema: [
+              { AttributeName: "creator", KeyType: "HASH" },
+              { AttributeName: "depth", KeyType: "RANGE" }
+            ],
+            Projection: {
+              ProjectionType: "INCLUDE",
+              NonKeyAttributes: ["uuid", "ancestor", "payload"]
+            }
+          },
+          // {
+          //   IndexName: "ItemClosureIndex",
+          //   KeySchema: [
+          //     { AttributeName: "ancestor", KeyType: "HASH" },
+          //     { AttributeName: "depth", KeyType: "RANGE" }
+          //   ],
+          //   Projection: {
+          //     ProjectionType: "INCLUDE",
+          //     NonKeyAttributes: ["uuid", "creator"]
+          //   }
+          // }
+        ]
       }, (err, data) => {
         if (err) { reject(err); } else { resolve(data); }
       })
