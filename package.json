@@ -25,7 +25,7 @@
     "apollo-client": "^2.6.3",
     "apollo-link-http": "^1.5.15",
     "apollo-server-core": "^2.6.3",
-    "apollo-server-lambda": "^2.6.3",
+    "apollo-server-lambda": "^2.14.2",
     "argon2": "^0.24.0",
     "aws-lambda": "^0.1.2",
     "aws-sdk": "^2.478.0",
