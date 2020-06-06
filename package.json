@@ -24,7 +24,7 @@
     "apollo-cache-inmemory": "^1.6.2",
     "apollo-client": "^2.6.3",
     "apollo-link-http": "^1.5.15",
-    "apollo-server-core": "^2.6.3",
+    "apollo-server-core": "^2.14.2",
     "apollo-server-lambda": "^2.6.3",
     "argon2": "^0.24.0",
     "aws-lambda": "^0.1.2",
